@@ -14,3 +14,8 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get("/login", "AuthController@login");
+Route::post("/login", "AuthController@iniciaSessao");
+Route::get("/cadastro", "AuthController@cadastro");
+Route::post("/cadastro", "AuthController@insereUsuario");
