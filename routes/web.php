@@ -19,3 +19,15 @@ Route::get("/login", "AuthController@login");
 Route::post("/login", "AuthController@iniciaSessao");
 Route::get("/cadastro", "AuthController@cadastro");
 Route::post("/cadastro", "AuthController@insereUsuario");
+Route::get("/completarcadastro", "AuthController@completarCadastro");
+Route::get("/feed", function () {
+    return response()->json([
+        "msg" => "Nada aqui irmão",
+    ]);
+});
+
+Route::prefix("/interesses")->group(function() {
+    Route::get("/", "InteressesController@getInteresses");
+});
+
+Route::get("/logout", "AuthController@logout");

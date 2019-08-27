@@ -15,16 +15,25 @@ class AuthController extends Controller
         return view("login");
     }
 
-    public function cadastro() {
-        return view ("cadastro");
+    public function cadastro()
+    {
+        return view("cadastro");
     }
 
-    public function iniciaSessao(Request $req) {
+    public function iniciaSessao(Request $req)
+    {
         $usuario = Usuario::where("email", $req->email)->where("senha", $req->senha)->first();
         if ($usuario) {
-
-        } else  {
-            
+            session([
+                "usuario" => $usuario
+            ]);
+            return response()->json([
+                "completou_login" => $usuario->completou_login
+            ]);
+        } else {
+            return response()->json([
+                "erro" => "Usuário não localizado!",
+            ], 404);
         }
     }
 
@@ -45,6 +54,18 @@ class AuthController extends Controller
 
         return response()->json([
             "status" => "success"
+        ]);
+    }
+
+    public function completarCadastro(Request $req)
+    {
+        return view("completarCadastro");
+    }
+
+    public function logout(Request $req) {
+        $req->session()->destroy();
+        return response()->json([
+            "msg" => "Sessão finalizada com sucesso!",
         ]);
     }
 }

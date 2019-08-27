@@ -29,7 +29,7 @@ $("#btnCadastrar").click(function (e) {
                 text: "Vamos para a próxima etapa!",
             });
             setTimeout(() => {
-                // Redireciona para a próxima etapa do cadastro
+                location.href = "/completarcadastro"
             }, 2000);
         },
         error(data) {
@@ -74,15 +74,119 @@ $("#btnLogar").click(function (e) {
             email,
             senha
         },
-        success() {
-
+        success(data) {
+            if (!data.completou_login) {
+                swal({
+                    title: "Falta pouco!",
+                    text: "Vamos completar seu cadastro...",
+                    icon: "info"
+                });
+                setTimeout(() => {
+                    location.href = "/completarcadastro"
+                }, 1000);
+            } else {
+                location.href = "/feed"
+            }
         },
-        error() {
-            swal({
-                title: "Oops",
-                icon: "error",
-                text: "Ocorreu um erro ao relizar o login"
-            })
+        error(data) {
+            const { erro } = data.responseJSON;
+            if (erro) {
+                swal({
+                    title: "Oops",
+                    icon: "error",
+                    text: erro,
+                })
+            } else {
+                swal({
+                    title: "Oops",
+                    icon: "error",
+                    text: "Ocorreu um erro ao relizar o login"
+                })
+            }
         }
     })
 });
+
+/**
+ * Clicar na imagem abre o upload
+ */
+$(".avatarPerfil").click(function () {
+    $(this).next().click();
+});
+
+/**
+ * Seta o preview da imagem que será enviada
+ * https://stackoverflow.com/questions/14069421/show-an-image-preview-before-upload
+ */
+$("#uploadAvatar").change(function (e) {
+    var reader = new FileReader();
+
+    reader.onload = function (e) {
+        // get loaded data and render thumbnail.
+        document.getElementsByClassName("avatarPerfil")[0].src = e.target.result;
+    };
+
+    // read the image file as a data URL.
+    reader.readAsDataURL(this.files[0]);
+});
+
+/**
+ * Configura o autocomplete para os interesses
+ */
+function setupAutoCompleteInteresses() {
+    const $input = $("#searchInteresses");
+
+    $input.autocomplete({
+        source: function (request, response) {
+            jQuery.ajax({
+                url: "/interesses",
+                dataType: "json",
+                cache: false,
+                data: {
+                    busca: $input.val()
+                },
+                success: function (data) {
+                    response($.map(data, function (item) {
+
+                        if (item.total > 0) {
+                            /* $label.hide();
+                            $input.removeClass("adicionarRegistro"); */
+                        }
+                        if (item.total < 1) {
+                            /* $codigo.val('');
+                            $label.show();
+                            $input.addClass("adicionarRegistro"); */
+                        }
+                        return {
+                            label: item.label,
+                            value: item.value,
+                        };
+                    }));
+                }
+            });
+        },
+        minLength: 0,
+        autoFocus: true,
+        select: function (event, ui) {
+
+            return false;
+        },
+        response: function (event, ui) {
+
+        },
+        search: function (event, ui) {
+
+        },
+        open: function (event, ui) {
+
+        }
+
+    }).data("ui-autocomplete")._renderItem = function (ul, item) {
+        return $("<li></li>")
+            .data("item.autocomplete", item)
+            .append("<a>" + item.label + "</a>")
+            .appendTo(ul);
+    };
+}
+
+setupAutoCompleteInteresses();
