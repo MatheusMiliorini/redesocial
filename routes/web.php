@@ -26,8 +26,9 @@ Route::get("/feed", function () {
     ]);
 });
 
-Route::prefix("/interesses")->group(function() {
+Route::prefix("/interesses")->group(function () {
     Route::get("/", "InteressesController@getInteresses");
+    Route::post("/", "InteressesController@addInteresse");
 });
 
 Route::get("/logout", "AuthController@logout");

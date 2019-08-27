@@ -12,6 +12,7 @@
     <div class="form-group">
         <label for="localizacao">Localização</label>
         <input type="text" class="form-control" placeholder="Rio do Sul, SC" name="localizacao">
+        <small class="form-text text-muted">A localização sugerida é baseada no endereço IP atual.</small>
     </div>
     <div class="form-group">
         <label for="nascimento">Nascimento</label>
@@ -34,6 +35,7 @@
     <hr>
     <h5>Meus interesses</h5>
     <input type="text" class="form-control" id="searchInteresses">
+    <button id="btnAddInteresseBase" type="button" class="btn btn-light btn-sm">Adicionar à base de dados</button>
     <small class="form-text text-muted">Busque interesses ou crie novos para melhorar o encontro de parceiros de idiomas.</small>
     <div id="wrapperInteresses">
 

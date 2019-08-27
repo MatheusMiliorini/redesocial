@@ -130,6 +130,7 @@ $("#uploadAvatar").change(function (e) {
     reader.readAsDataURL(this.files[0]);
 });
 
+
 /**
  * Configura o autocomplete para os interesses
  */
@@ -146,41 +147,38 @@ function setupAutoCompleteInteresses() {
                     busca: $input.val()
                 },
                 success: function (data) {
-                    response($.map(data, function (item) {
-
-                        if (item.total > 0) {
-                            /* $label.hide();
-                            $input.removeClass("adicionarRegistro"); */
-                        }
-                        if (item.total < 1) {
-                            /* $codigo.val('');
-                            $label.show();
-                            $input.addClass("adicionarRegistro"); */
-                        }
-                        return {
-                            label: item.label,
-                            value: item.value,
-                        };
-                    }));
+                    if (data.length === 0) {
+                        $("#btnAddInteresseBase").show();
+                        response();
+                    } else {
+                        $("#btnAddInteresseBase").hide();
+                        response(data.map(item => {
+                            return {
+                                label: item.nome,
+                                value: item.interesse_id,
+                            };
+                        }));
+                    }
                 }
             });
         },
-        minLength: 0,
-        autoFocus: true,
+        minLength: 1,
+        autoFocus: false,
+        focus(event, ui) {
+            $input.val(ui.item.label);
+            return false;
+        },
         select: function (event, ui) {
-
+            // ADICIONAR EM TELA
             return false;
         },
         response: function (event, ui) {
-
+            $input.removeClass("loadingBG");
+            return false;
         },
         search: function (event, ui) {
-
-        },
-        open: function (event, ui) {
-
+            $input.addClass("loadingBG");
         }
-
     }).data("ui-autocomplete")._renderItem = function (ul, item) {
         return $("<li></li>")
             .data("item.autocomplete", item)
@@ -189,4 +187,60 @@ function setupAutoCompleteInteresses() {
     };
 }
 
-setupAutoCompleteInteresses();
+/**
+ * Envia AJAX para cadastrar interesses ausentes
+ */
+$("#btnAddInteresseBase").click(function () {
+    const $input = $("#searchInteresses"),
+        nome = $input.val();
+
+    $.ajax({
+        url: "/interesses",
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        data: {
+            nome,
+        },
+        success: (data) => {
+            debugger;
+            $input.val("");
+            $(this).hide();
+            $input.focus();
+            // ADICIONA NA LISTA
+        },
+        error(data) {
+
+        }
+    })
+});
+
+/**
+ * Adiciona um interesse à lista de interesses em tela
+ * @param {{}} interesse 
+ */
+function addInteresseLista(interesse) {
+
+}
+
+/**
+ * Tela de completar cadastro
+ */
+if (location.href.includes("/completarcadastro")) {
+    // Localização do usuário via IP
+    $.ajax({
+        url: "http://ip-api.com/json/",
+        dataType: "json",
+        data: {
+            lang: "pt-BR",
+        },
+        success(data) {
+            $('[name="localizacao"]').val(`${data.city}, ${data.region}`);
+        },
+        error(e) {
+            console.error(e);
+        }
+    });
+    setupAutoCompleteInteresses();
+}

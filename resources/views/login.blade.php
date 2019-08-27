@@ -12,5 +12,6 @@
     <div class="form-group">
         <button class="btn btn-success" style="width: 100%" id="btnLogar">Logar</button>
     </div>
+    <a href="/cadastro">Não tenho conta</a>
 </form>
 @endsection

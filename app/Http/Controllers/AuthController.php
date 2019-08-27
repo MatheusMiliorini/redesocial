@@ -12,14 +12,21 @@ class AuthController extends Controller
      */
     public function login()
     {
-        return view("login");
+        return view("login", [
+            "title" => "Login",
+        ]);
     }
 
     public function cadastro()
     {
-        return view("cadastro");
+        return view("cadastro", [
+            "title" => "Cadastro",
+        ]);
     }
 
+    /**
+     * Seta a sessão
+     */
     public function iniciaSessao(Request $req)
     {
         $usuario = Usuario::where("email", $req->email)->where("senha", $req->senha)->first();
@@ -59,10 +66,13 @@ class AuthController extends Controller
 
     public function completarCadastro(Request $req)
     {
-        return view("completarCadastro");
+        return view("completarCadastro", [
+            "title" => "Completar cadastro"
+        ]);
     }
 
-    public function logout(Request $req) {
+    public function logout(Request $req)
+    {
         $req->session()->destroy();
         return response()->json([
             "msg" => "Sessão finalizada com sucesso!",
