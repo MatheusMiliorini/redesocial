@@ -256,4 +256,59 @@ if (location.href.includes("/completarcadastro")) {
         }
     });
     setupAutoCompleteInteresses();
+
+    $("#btnFinalizar").click(function () {
+        /* let dados = $('form').serialize();
+        dados += `&interesses=${getInteresses()}`; */
+        let dados = new FormData(document.getElementById("formCompletarCadastro"));
+        dados = getInteresses(dados);
+
+        $.ajax({
+            url: "/completarcadastro",
+            method: "POST",
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: dados,
+            processData: false,
+            contentType: false,
+            success() {
+                swal({
+                    title: "Sucesso!",
+                    text: "Sua conta foi criada com sucesso!",
+                    icon: "success",
+                });
+                setTimeout(() => {
+                    location.href = "/feed";
+                }, 1500);
+            },
+            error(data) {
+                let erro = "Ocorreu um erro... Por favor, tente novamente!";
+                if (data.responseJSON.errors) {
+                    try {
+                        erro = data.responseJSON.errors[Object.keys(data.responseJSON.errors)[0]][0];
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                }
+                swal({
+                    title: "Oops...",
+                    text: erro,
+                    icon: "error",
+                });
+            }
+        });
+    });
+
+    /**
+     * Itera todos os interesses selecionados e adiciona-os ao formData
+     * @param {formData} formData
+     * @returns {formData} FormData atualizado
+     */
+    function getInteresses(formData) {
+        $('[data-interesse-id]').map((i, el) => {
+            formData.append("interesse_id[]", $(el).attr("data-interesse-id"));
+        });
+        return formData;
+    }
 }

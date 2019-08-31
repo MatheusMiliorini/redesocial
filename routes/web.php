@@ -20,6 +20,7 @@ Route::post("/login", "AuthController@iniciaSessao");
 Route::get("/cadastro", "AuthController@cadastro");
 Route::post("/cadastro", "AuthController@insereUsuario");
 Route::get("/completarcadastro", "AuthController@completarCadastro");
+Route::post("/completarcadastro", "AuthController@completarCadastroPost");
 Route::get("/feed", function () {
     return response()->json([
         "msg" => "Nada aqui irmão",
@@ -29,6 +30,10 @@ Route::get("/feed", function () {
 Route::prefix("/interesses")->group(function () {
     Route::get("/", "InteressesController@getInteresses");
     Route::post("/", "InteressesController@addInteresse");
+});
+
+Route::prefix("/idiomas")->group(function () {
+    Route::get("/", "IdiomasController@getIdiomas");
 });
 
 Route::get("/logout", "AuthController@logout");
