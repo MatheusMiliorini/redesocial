@@ -75,21 +75,21 @@ function LinhaSelect(props) {
     }
 
     return (
-        <div className="form-group row" style={{ marginTop: "5px" }}>
-            <div className="col-6">
+        <div className="form-group" style={{ marginTop: "5px", display: "flex", alignItems: "flex-end" }}>
+            <div style={{ flex: 0.5 }}>
                 <label>Idioma</label>
                 <select className="form-control" name="idioma_id[]">
                     {props.idiomas.map((idioma, i) => <option key={i} value={idioma.idioma_id}>{idioma.nome}</option>)}
                 </select>
             </div>
-            <div className="col-5">
+            <div style={{ flex: 0.5, paddingLeft: "15px" }}>
                 <label>Nível de conhecimento</label>
                 <select className="form-control" name="nivel_conhecimento[]">
                     {niveis}
                 </select>
             </div>
             {props.ultimo &&
-                <div className="col-1">
+                <div style={{ paddingLeft: "15px" }}>
                     <label style={{ minHeight: '1rem' }}></label>
                     <button type="button" onClick={removeLinha} className="btn" title="Clique para remover"><i className="far fa-trash-alt"></i></button>
                 </div>
