@@ -34,8 +34,8 @@
 
     <hr>
     <h5>Meus interesses</h5>
+    <div class="addAutocomplete">Adicionar "<span id="sugestaoInteresse"></span>" <i class="far fa-plus-square"></i></div>
     <input type="text" class="form-control" id="searchInteresses">
-    <button id="btnAddInteresseBase" type="button" class="btn btn-light btn-sm">Adicionar à base de dados</button>
     <small class="form-text text-muted">Busque interesses ou crie novos para melhorar o encontro de parceiros de idiomas.</small>
     <div id="wrapperInteresses">
 

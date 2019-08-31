@@ -144,14 +144,14 @@ function setupAutoCompleteInteresses() {
                 dataType: "json",
                 cache: false,
                 data: {
-                    busca: $input.val()
+                    busca: request.term
                 },
                 success: function (data) {
                     if (data.length === 0) {
-                        $("#btnAddInteresseBase").show();
+                        $("#sugestaoInteresse").text(request.term).parent().show();
                         response();
                     } else {
-                        $("#btnAddInteresseBase").hide();
+                        $("#sugestaoInteresse").text("").parent().hide();
                         response(data.map(item => {
                             return {
                                 label: item.nome,
@@ -169,7 +169,8 @@ function setupAutoCompleteInteresses() {
             return false;
         },
         select: function (event, ui) {
-            // ADICIONAR EM TELA
+            addInteresseLista({ "interesse_id": ui.item.value, "nome": ui.item.label });
+            $input.val("");
             return false;
         },
         response: function (event, ui) {
@@ -189,8 +190,9 @@ function setupAutoCompleteInteresses() {
 
 /**
  * Envia AJAX para cadastrar interesses ausentes
+ * O next é o <i>
  */
-$("#btnAddInteresseBase").click(function () {
+$("#sugestaoInteresse").next().click(function () {
     const $input = $("#searchInteresses"),
         nome = $input.val();
 
@@ -204,11 +206,11 @@ $("#btnAddInteresseBase").click(function () {
             nome,
         },
         success: (data) => {
-            debugger;
             $input.val("");
-            $(this).hide();
+            $(this).parents(".addAutocomplete").hide();
             $input.focus();
             // ADICIONA NA LISTA
+            addInteresseLista(data);
         },
         error(data) {
 
@@ -221,7 +223,18 @@ $("#btnAddInteresseBase").click(function () {
  * @param {{}} interesse 
  */
 function addInteresseLista(interesse) {
+    const { interesse_id, nome } = interesse;
 
+    const html = `
+        <div class="escolhaMiniatura aux" title="Clique para remover" data-interesse-id="${interesse_id}">${nome}</div>
+    `;
+
+    $("#wrapperInteresses").append(html);
+
+    // Remove ao clicar
+    $(".aux").click(function () {
+        $(this).remove();
+    }).removeClass("aux");
 }
 
 /**

@@ -9,6 +9,40 @@
     margin-top: 0.5rem;
 }
 
+.addAutocomplete {
+    display: none;
+    padding: 5px 10px;
+    background-color: lightskyblue;
+    color: white;
+    border-radius: 5px;
+    margin-bottom: 1px;
+}
+
+.addAutocomplete span {
+    font-weight: bold;
+}
+
+.addAutocomplete i {
+    float: right;
+    padding-top: 4px;
+    cursor: pointer;
+}
+
+#wrapperInteresses {
+    padding: 5px 0;
+}
+
+.escolhaMiniatura {
+    background-color: lightskyblue;
+    padding: 3px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+    display: inline-block;
+    margin-bottom: 5px;
+}
+
 .loadingBG {
     background-image: url('https://www.wpfaster.org/wp-content/uploads/2013/06/loading-gif.gif');
     background-repeat: no-repeat;
