@@ -1,0 +1,50 @@
+html, body {
+    height: 100%;
+    background-color: #15202b;
+}
+
+.nav {
+    border-bottom: 1px solid white;
+    height: 3rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.nav a {
+    color: inherit;
+}
+
+.nav li {
+    color: #FFFFFF;
+    font-size: 1.5rem;
+    font-weight: bold;
+    flex: 1;
+    text-align: center;
+}
+
+.nav-item-selected {
+    color: #FFC857 !important;
+}
+
+label {
+    margin: 0;
+    color: white;
+}
+
+h4 {
+    color: white;
+}
+
+.rem1top {
+    margin-top: 1rem;
+}
+
+.form-control {
+    background-color: #253341;
+    color: white;
+}
+
+.form-control:focus {
+    background-color: #15202b;
+    color: white;
+}

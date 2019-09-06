@@ -135,8 +135,6 @@ class AuthController extends Controller
     public function logout(Request $req)
     {
         $req->session()->flush();
-        return response()->json([
-            "msg" => "Sessão finalizada com sucesso!",
-        ]);
+        return redirect("/login");
     }
 }

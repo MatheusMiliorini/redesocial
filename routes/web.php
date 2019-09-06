@@ -21,10 +21,14 @@ Route::get("/cadastro", "AuthController@cadastro");
 Route::post("/cadastro", "AuthController@insereUsuario");
 Route::get("/completarcadastro", "AuthController@completarCadastro");
 Route::post("/completarcadastro", "AuthController@completarCadastroPost");
-Route::get("/feed", function () {
-    return response()->json([
-        "msg" => "Nada aqui irmão",
-    ]);
+
+Route::prefix("/feed")->group(function () {
+    Route::get("/", 'FeedController@mostraFeed');
+});
+
+Route::prefix("/conexoes")->group(function () {
+    Route::get("/", "ConexoesController@telaConexoes");
+    Route::get("/buscaUsuarios", "ConexoesController@buscaUsuarios");
 });
 
 Route::prefix("/interesses")->group(function () {

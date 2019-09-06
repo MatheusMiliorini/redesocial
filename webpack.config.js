@@ -1,10 +1,10 @@
 const path = require('path');
 
 module.exports = {
-    entry: './public/js/src/completarcadastro.js',
+    entry: './public/js/src/conexoes.js',
     output: {
         path: path.resolve(__dirname, 'public/js/dist'),
-        filename: 'completarcadastro.js'
+        filename: 'conexoes.js'
     },
     mode: "development",
     module: {

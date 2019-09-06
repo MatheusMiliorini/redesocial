@@ -1,0 +1,76 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class ConexoesController extends Controller
+{
+    function telaConexoes()
+    {
+        return view("conexoes", [
+            "title" => "Conexões"
+        ]);
+    }
+
+    function buscaUsuarios(Request $req)
+    {
+        $dados = $req->validate([
+            "pesquisa" => "required|string"
+        ]);
+
+        // Busca os usuários com base na busca, e também busca seus idiomas
+        $usuarios = DB::select("
+            SELECT 
+                u.nome,
+                '/storage/'||u.foto AS foto,
+                u.localizacao,
+                u.url_unica,
+                json_agg(
+                    json_build_object(
+                        'idioma', i.nome,
+                        'nivel_conhecimento', us.nivel_conhecimento
+                    )
+                ORDER BY i.nome)::TEXT AS idiomas,
+                ints.nome AS interesses
+            FROM usuarios u
+            JOIN idiomas_usuarios us ON
+                us.usuario_id = u.usuario_id
+            JOIN IDIOMAS i ON
+                i.idioma_id = us.idioma_id
+            LEFT JOIN (
+                SELECT 
+                    usuario_id, 
+                    JSON_AGG(interesses.nome)::TEXT AS nome
+                FROM interesses_usuarios
+                JOIN interesses ON 
+                    interesses_usuarios.interesse_id = interesses.interesse_id	
+                GROUP BY usuario_id
+            ) ints ON 
+                u.usuario_id = ints.usuario_id
+            WHERE 
+                u.nome ILIKE :pesquisa	
+                AND u.usuario_id IN (
+                    SELECT us2.usuario_id
+                    FROM idiomas_usuarios us2
+                    WHERE us2.idioma_id IN (
+                        SELECT us3.idioma_id
+                        FROM idiomas_usuarios us3
+                        WHERE us3.usuario_id = :usuario_id
+                    )
+                )
+            GROUP BY 
+                u.nome, 
+                u.foto, 
+                u.localizacao, 
+                u.url_unica, 
+                interesses
+        ", [
+            "pesquisa" => $dados['pesquisa'] . "%",
+            "usuario_id" => $req->session()->get("usuario")->usuario_id
+        ]);
+
+        return response()->json($usuarios);
+    }
+}
