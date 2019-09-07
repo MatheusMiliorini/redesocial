@@ -14,6 +14,7 @@ class Conexoes extends Component {
 
         // Binds
         this.handlePesquisa = this.handlePesquisa.bind(this);
+        this.buscaSeguindo = this.buscaSeguindo.bind(this);
     }
 
     handlePesquisa(e) {
@@ -27,6 +28,10 @@ class Conexoes extends Component {
             this.setState({
                 resultados: [],
             });
+
+            // Atualiza a lista de seguindo
+            this.buscaSeguindo();
+
             return false;
         }
 
@@ -47,27 +52,52 @@ class Conexoes extends Component {
         });
     }
 
+    /**
+     * Faz as buscas iniciais
+     */
+    componentDidMount() {
+        this.buscaSeguindo();
+    }
+
+    /**
+     * Busca os usuários que eu sigo
+     */
+    buscaSeguindo() {
+        $.ajax({
+            url: "/conexoes/seguindo",
+            method: "GET",
+            success: (seguindo) => {
+                this.setState({
+                    seguindo,
+                })
+            },
+            error() {
+                disparaErro("Ocorreu um erro ao buscar os usuários que você segue. Por favor, verifique sua conexão e tente novamente.");
+            }
+        });
+    }
+
     render() {
         return (
             <div>
                 <Busca pesquisa={this.state.pesquisa} onChange={this.handlePesquisa} />
                 {this.state.pesquisa !== "" &&
-                    <Resultados resultados={this.state.resultados} />
+                    <Usuarios usuarios={this.state.resultados} />
                 }
 
                 {this.state.pesquisa === "" &&
-                    <Seguindo />
+                    <Seguindo usuarios={this.state.seguindo} />
                 }
             </div>
         )
     }
 }
 
-function Resultados(props) {
-    return props.resultados.map((res, i) => <Resultado key={i} res={res} />);
+function Usuarios(props) {
+    return props.usuarios.map((res, i) => <Usuario key={i} res={res} />);
 }
 
-class Resultado extends Component {
+class Usuario extends Component {
     constructor(props) {
         super(props);
         this.state = {
@@ -180,6 +210,7 @@ function Seguindo(props) {
     return (
         <React.Fragment>
             <h4 className="rem1top">Seguindo</h4>
+            {props.usuarios.map((usuario, i) => <Usuario key={i} res={usuario} />)}
         </React.Fragment>
     )
 }

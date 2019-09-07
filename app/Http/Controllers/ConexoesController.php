@@ -75,8 +75,65 @@ class ConexoesController extends Controller
                 u.localizacao, 
                 u.url_unica, 
                 interesses
+            ORDER BY u.nome
         ", [
             "pesquisa" => $dados['pesquisa'] . "%",
+            "usuario_id" => $req->session()->get("usuario")->usuario_id
+        ]);
+
+        return response()->json($usuarios);
+    }
+
+    /**
+     * Busca os usuários que o usuário logado segue
+     */
+    function getSeguindo(Request $req)
+    {
+        $usuarios = DB::select("
+            SELECT 
+                u.usuario_id,
+                u.nome,
+                '/storage/'||u.foto AS foto,
+                u.localizacao,
+                u.url_unica,
+                json_agg(
+                    json_build_object(
+                        'idioma', i.nome,
+                        'nivel_conhecimento', us.nivel_conhecimento
+                    )
+                ORDER BY i.nome)::TEXT AS idiomas,
+                ints.nome AS interesses,
+                TRUE AS seguindo
+            FROM usuarios u
+            JOIN idiomas_usuarios us ON
+                us.usuario_id = u.usuario_id
+            JOIN IDIOMAS i ON
+                i.idioma_id = us.idioma_id
+            LEFT JOIN (
+                SELECT 
+                    usuario_id, 
+                    JSON_AGG(interesses.nome)::TEXT AS nome
+                FROM interesses_usuarios
+                JOIN interesses ON 
+                    interesses_usuarios.interesse_id = interesses.interesse_id	
+                GROUP BY usuario_id
+            ) ints ON 
+                u.usuario_id = ints.usuario_id
+            WHERE 
+                u.usuario_id IN (
+                    SELECT c.segue
+                    FROM conexoes c
+                    WHERE c.seguidor = :usuario_id
+                )
+            GROUP BY 
+                u.usuario_id,
+                u.nome, 
+                u.foto, 
+                u.localizacao, 
+                u.url_unica, 
+                interesses
+            ORDER BY u.nome
+        ", [
             "usuario_id" => $req->session()->get("usuario")->usuario_id
         ]);
 
