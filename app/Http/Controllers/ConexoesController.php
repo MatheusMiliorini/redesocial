@@ -22,7 +22,13 @@ class ConexoesController extends Controller
 
         // Busca os usuários com base na busca, e também busca seus idiomas
         $usuarios = DB::select("
+            WITH eu_sigo AS (
+                SELECT segue
+                FROM conexoes
+                WHERE seguidor = :usuario_id
+            )
             SELECT 
+                u.usuario_id,
                 u.nome,
                 '/storage/'||u.foto AS foto,
                 u.localizacao,
@@ -33,7 +39,8 @@ class ConexoesController extends Controller
                         'nivel_conhecimento', us.nivel_conhecimento
                     )
                 ORDER BY i.nome)::TEXT AS idiomas,
-                ints.nome AS interesses
+                ints.nome AS interesses,
+                CASE WHEN u.usuario_id IN (SELECT * FROM eu_sigo) THEN TRUE ELSE FALSE END AS seguindo
             FROM usuarios u
             JOIN idiomas_usuarios us ON
                 us.usuario_id = u.usuario_id
@@ -60,7 +67,9 @@ class ConexoesController extends Controller
                         WHERE us3.usuario_id = :usuario_id
                     )
                 )
+                AND u.usuario_id <> :usuario_id
             GROUP BY 
+                u.usuario_id,
                 u.nome, 
                 u.foto, 
                 u.localizacao, 
@@ -72,5 +81,48 @@ class ConexoesController extends Controller
         ]);
 
         return response()->json($usuarios);
+    }
+
+    /**
+     * Função que faz o usuário logado iniciar ou parar de seguir outro usuário
+     */
+    function seguirPararSeguir(Request $req)
+    {
+        $dados = $req->validate([
+            "outro" => "required|integer|exists:usuarios,usuario_id",
+            "seguindo" => "required"
+        ]);
+
+        $dados['seguindo'] = json_decode($dados['seguindo']);
+
+        DB::beginTransaction();
+
+        // Para de seguir
+        if ($dados['seguindo'] === true) {
+            DB::delete("
+                DELETE FROM conexoes
+                WHERE seguidor = :usuario_id
+                AND segue = :outro
+            ", [
+                "usuario_id" => session("usuario")->usuario_id,
+                "outro" => $dados['outro']
+            ]);
+        }
+        // Começa a seguir
+        else {
+            DB::insert("
+                INSERT INTO conexoes(seguidor, segue)
+                VALUES(:usuario_id, :outro)
+            ", [
+                "usuario_id" => session("usuario")->usuario_id,
+                "outro" => $dados['outro']
+            ]);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            "status" => "success",
+        ]);
     }
 }

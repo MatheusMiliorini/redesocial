@@ -24,6 +24,9 @@ class Conexoes extends Component {
 
         // Não pesquisa se estiver vazio
         if (value === "") {
+            this.setState({
+                resultados: [],
+            });
             return false;
         }
 
@@ -62,44 +65,103 @@ function Resultados(props) {
     return props.resultados.map((res, i) => <Resultado key={i} res={res} />);
 }
 
-function Resultado(props) {
-    const { res } = props;
-    const idiomas = JSON.parse(res.idiomas);
-    const interesses = JSON.parse(res.interesses);
+class Resultado extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            btnHabilitado: true,
+            idiomas: JSON.parse(props.res.idiomas),
+            interesses: JSON.parse(props.res.interesses),
+            seguindo: props.res.seguindo,
+        }
 
-    const Wrapper = styled.div`
-        border-bottom: 1px solid white;
-        display: flex;
-        flex-wrap: wrap;
-        margin-top: 1rem;
-        padding-bottom: 1rem;
-    `
+        // Binds
+        this.segueUsuario = this.segueUsuario.bind(this);
+    }
 
-    const Avatar = styled.img`
-        height: 3rem;
-        width: 3rem;
-        border-radius: 50%;
-    `
+    segueUsuario() {
+        this.setState({
+            btnHabilitado: false,
+        });
 
-    const Nome = styled.p`
-        color: white;
-        margin: 0 10px;
-        display: inline-block;
-    `
+        $.ajax({
+            url: "/conexoes",
+            method: "POST",
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                "outro": this.props.res.usuario_id,
+                "seguindo": this.state.seguindo,
+            },
+            success: () => {
+                this.setState((state) => {
+                    return {
+                        btnHabilitado: true,
+                        seguindo: !state.seguindo
+                    }
+                });
+            },
+            error: () => {
+                this.setState({
+                    btnHabilitado: true,
+                });
+                disparaErro("Ocorreu um erro ao seguir/parar de seguir o usuário. Por favor, cheque sua conexão e tente novamente");
+            }
+        });
+    }
 
-    const Localizacao = styled.p`
-        color: white;
-        margin: 0;
-        display: inline-block;
-    `
+    render() {
+        const Wrapper = styled.div`
+            border-bottom: 1px solid white;
+            margin-top: 1rem;
+            padding-bottom: 1rem;
+            overflow: auto;
+        `;
 
-    return (
-        <Wrapper>
-            <Avatar src={res.foto} />
-            <Nome>{res.nome}</Nome>
-            <Localizacao>{res.localizacao}</Localizacao>
-        </Wrapper>
-    );
+        const Avatar = styled.img`
+            height: 3rem;
+            width: 3rem;
+            border-radius: 50%;
+            float: left;
+            margin-right: 1rem;
+        `;
+
+        const P = styled.p`
+            color: white;
+            display: inline-block;
+            margin: 0;
+        `;
+
+        const P2 = styled.p`
+            color: white;
+            font-weight: bold;
+            margin: 0;
+        `;
+
+        const BtnSeguir = styled.button`
+            float: right;
+        `;
+
+        let idiomasArr = this.state.idiomas.map((idioma, i) => `${idioma.idioma} (${idioma.nivel_conhecimento})`);
+        idiomasArr = <P>{idiomasArr.join(", ")}</P>;
+        const interessesArr = <P>{this.state.interesses.join(", ")}</P>;
+
+        return (
+            <Wrapper>
+                <Avatar src={this.props.res.foto} />
+                <BtnSeguir className="btn btn-info" disabled={!this.state.btnHabilitado} onClick={this.segueUsuario}>{this.state.seguindo ? "Seguindo" : "Seguir"}</BtnSeguir>
+                <P>{this.props.res.nome}</P>
+                <br />
+                <P>{this.props.res.localizacao}</P>
+                <br />
+                <P2>Idiomas:</P2>
+                {idiomasArr}
+                <P2>Interesses:</P2>
+                {interessesArr}
+            </Wrapper>
+        );
+    }
 }
 
 function Busca(props) {

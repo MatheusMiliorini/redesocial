@@ -28,6 +28,7 @@ Route::prefix("/feed")->group(function () {
 
 Route::prefix("/conexoes")->group(function () {
     Route::get("/", "ConexoesController@telaConexoes");
+    Route::post("/", "ConexoesController@seguirPararSeguir");
     Route::get("/buscaUsuarios", "ConexoesController@buscaUsuarios");
 });
 
