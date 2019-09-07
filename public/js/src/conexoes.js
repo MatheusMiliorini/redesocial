@@ -51,7 +51,9 @@ class Conexoes extends Component {
         return (
             <div>
                 <Busca pesquisa={this.state.pesquisa} onChange={this.handlePesquisa} />
-                <Resultados resultados={this.state.resultados} />
+                {this.state.pesquisa !== "" &&
+                    <Resultados resultados={this.state.resultados} />
+                }
 
                 {this.state.pesquisa === "" &&
                     <Seguindo />
