@@ -9,12 +9,14 @@ class Conexoes extends Component {
         this.state = {
             pesquisa: "",
             seguindo: [],
+            seguidores: [],
             resultados: [],
         }
 
         // Binds
         this.handlePesquisa = this.handlePesquisa.bind(this);
         this.buscaSeguindo = this.buscaSeguindo.bind(this);
+        this.buscaSeguidores = this.buscaSeguidores.bind(this);
     }
 
     handlePesquisa(e) {
@@ -57,6 +59,7 @@ class Conexoes extends Component {
      */
     componentDidMount() {
         this.buscaSeguindo();
+        this.buscaSeguidores();
     }
 
     /**
@@ -77,6 +80,24 @@ class Conexoes extends Component {
         });
     }
 
+    /**
+     * Busca os usuários que me seguem
+     */
+    buscaSeguidores() {
+        $.ajax({
+            url: "/conexoes/seguidores",
+            method: "GET",
+            success: (seguidores) => {
+                this.setState({
+                    seguidores,
+                })
+            },
+            error() {
+                disparaErro("Ocorreu um erro ao buscar os usuários que seguem você. Por favor, verifique sua conexão e tente novamente.");
+            }
+        });
+    }
+
     render() {
         return (
             <div>
@@ -86,7 +107,11 @@ class Conexoes extends Component {
                 }
 
                 {this.state.pesquisa === "" &&
-                    <Seguindo usuarios={this.state.seguindo} />
+                    <Bloco title="Seguindo" usuarios={this.state.seguindo} />
+                }
+
+                {this.state.pesquisa === "" &&
+                    <Bloco title="Seguidores" usuarios={this.state.seguidores} />
                 }
             </div>
         )
@@ -206,10 +231,14 @@ function Busca(props) {
     )
 }
 
-function Seguindo(props) {
+/**
+ * Não consegui pensar num nome melhor
+ * @param {*} props 
+ */
+function Bloco(props) {
     return (
         <React.Fragment>
-            <h4 className="rem1top">Seguindo</h4>
+            <h4 className="rem1top">{props.title} ({props.usuarios.length})</h4>
             {props.usuarios.map((usuario, i) => <Usuario key={i} res={usuario} />)}
         </React.Fragment>
     )

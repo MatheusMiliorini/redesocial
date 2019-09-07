@@ -30,6 +30,7 @@ Route::prefix("/conexoes")->group(function () {
     Route::get("/", "ConexoesController@telaConexoes");
     Route::post("/", "ConexoesController@seguirPararSeguir");
     Route::get("/seguindo", "ConexoesController@getSeguindo");
+    Route::get("/seguidores", "ConexoesController@getSeguidores");
     Route::get("/buscaUsuarios", "ConexoesController@buscaUsuarios");
 });
 
