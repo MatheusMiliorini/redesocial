@@ -5,3 +5,7 @@ function disparaErro(msg) {
         icon: "error",
     });
 }
+
+const headerAjax = {
+    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+};

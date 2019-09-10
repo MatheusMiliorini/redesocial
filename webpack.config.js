@@ -1,10 +1,10 @@
 const path = require('path');
 
 module.exports = {
-    entry: './public/js/src/conexoes.js',
+    entry: './public/js/src/feed.js',
     output: {
         path: path.resolve(__dirname, 'public/js/dist'),
-        filename: 'conexoes.js'
+        filename: 'feed.js'
     },
     mode: "development",
     module: {

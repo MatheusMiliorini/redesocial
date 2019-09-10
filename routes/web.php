@@ -24,6 +24,7 @@ Route::post("/completarcadastro", "AuthController@completarCadastroPost");
 
 Route::prefix("/feed")->group(function () {
     Route::get("/", 'FeedController@mostraFeed');
+    Route::post("/", 'FeedController@addPublicao');
 });
 
 Route::prefix("/conexoes")->group(function () {
