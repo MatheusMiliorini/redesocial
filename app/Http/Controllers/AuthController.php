@@ -106,8 +106,10 @@ class AuthController extends Controller
         DB::beginTransaction();
 
         $usuario = Usuario::find($req->session()->get('usuario')->usuario_id);
-        $usuario->fill($dados);
-        $usuario->foto = $dados['foto']->store('avatares');
+	$usuario->fill($dados);
+	if (isset($dados['foto'])) {
+		$usuario->foto = $dados['foto']->store('avatares');
+	}
         $usuario->completou_login = true;
         $usuario->save();
 
