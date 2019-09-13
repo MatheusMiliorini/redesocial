@@ -32,8 +32,8 @@ class AuthController extends Controller
      */
     public function iniciaSessao(Request $req)
     {
-        $usuario = Usuario::where("email", $req->email)->where("senha", Hash::make($req->senha))->first();
-        if ($usuario) {
+        $usuario = Usuario::where("email", $req->email)->first();
+        if ($usuario && Hash::check($req->senha, $usuario->senha)) {
             session([
                 "usuario" => $usuario
             ]);
