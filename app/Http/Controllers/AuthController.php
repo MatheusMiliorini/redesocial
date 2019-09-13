@@ -6,6 +6,7 @@ use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -31,7 +32,7 @@ class AuthController extends Controller
      */
     public function iniciaSessao(Request $req)
     {
-        $usuario = Usuario::where("email", $req->email)->where("senha", $req->senha)->first();
+        $usuario = Usuario::where("email", $req->email)->where("senha", Hash::make($req->senha))->first();
         if ($usuario) {
             session([
                 "usuario" => $usuario
@@ -52,13 +53,16 @@ class AuthController extends Controller
     public function insereUsuario(Request $req)
     {
         $req->validate([
-            "email" => "required|unique:usuarios"
+            "email" => "required|unique:usuarios",
+            "nome"  => "required",
+            "senha" => "required"
         ], [
             "email.unique" => "Este e-mail já se encontra em uso!"
         ]);
 
         $usuario = new Usuario();
         $usuario->fill($req->all());
+        $usuario->senha = Hash::make($req->senha);
         $usuario->save();
 
         session([
@@ -106,10 +110,10 @@ class AuthController extends Controller
         DB::beginTransaction();
 
         $usuario = Usuario::find($req->session()->get('usuario')->usuario_id);
-	$usuario->fill($dados);
-	if (isset($dados['foto'])) {
-		$usuario->foto = $dados['foto']->store('avatares');
-	}
+        $usuario->fill($dados);
+        if (isset($dados['foto'])) {
+            $usuario->foto = $dados['foto']->store('avatares');
+        }
         $usuario->completou_login = true;
         $usuario->save();
 
