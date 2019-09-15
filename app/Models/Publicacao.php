@@ -10,6 +10,6 @@ class Publicacao extends Model
     protected $primaryKey = "publicacao_id";
     public $timestamps = false;
     protected $fillable = [
-        'usuario_id', 'conteudo', 'link'
+        'usuario_id', 'conteudo', 'link', 'quando'
     ];
 }

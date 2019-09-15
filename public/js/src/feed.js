@@ -7,18 +7,36 @@ class Feed extends Component {
     constructor(props) {
         super(props);
         this.state = {
-
+            publicacoes: [],
         }
+
+        // Binds
+        this.atualizaFeed = this.atualizaFeed.bind(this);
     }
 
     componentDidMount() {
         // Busca as publicações
+        this.atualizaFeed();
+    }
+
+    atualizaFeed() {
+        console.log("Feed Atualizado");
+        $.ajax({
+            url: "/feed/publicacoes",
+            method: "GET",
+            success: (publicacoes) => {
+
+            },
+            error: (data) => {
+
+            }
+        });
     }
 
     render() {
         return (
             <React.Fragment>
-                <CriarPublicacao />
+                <CriarPublicacao atualizaFeed={this.atualizaFeed} />
             </React.Fragment>
         )
     }
@@ -64,7 +82,7 @@ class CriarPublicacao extends Component {
         formData.append("nomeAnexo", this.state.nomeAnexo);
 
         $.ajax({
-            url: "/feed",
+            url: "/feed/publicacoes",
             method: "POST",
             contentType: false,
             processData: false,
@@ -76,6 +94,14 @@ class CriarPublicacao extends Component {
                     icon: "success",
                     timer: 2000,
                 });
+
+                this.setState({
+                    anexoAdicionado: false,
+                    nomeAnexo: null,
+                    texto: "",
+                });
+
+                this.props.atualizaFeed();
             },
             error: (data) => {
                 if (data.responseJSON.erro) {
@@ -86,7 +112,6 @@ class CriarPublicacao extends Component {
             }
         });
     }
-
 
     render() {
 
@@ -112,6 +137,7 @@ class CriarPublicacao extends Component {
                     style={{ resize: "none" }}
                     className="form-control"
                     placeholder="No que você está pensando?"
+                    value={this.state.texto}
                     onChange={this.handleTexto} />
                 <div style={{ marginTop: "0.5rem" }}>
                     <input id="anexo" type="file" style={{ display: "none" }} onChange={this.handleAnexo} />

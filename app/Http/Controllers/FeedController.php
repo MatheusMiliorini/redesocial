@@ -57,4 +57,10 @@ class FeedController extends Controller
 
         DB::commit();
     }
+
+    function getPublicacoes(Request $req)
+    {
+        $publicacoes = [];
+        return response()->json($publicacoes);
+    }
 }
