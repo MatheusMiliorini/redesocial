@@ -26,6 +26,8 @@ class FeedController extends Controller
             "nomeAnexo" => "nullable",
         ]);
 
+        $mimeType = null;
+        
         // Verifica se o anexo é foto ou vídeo
         if (isset($_FILES['anexo'])) {
             // Valida o formato
@@ -52,6 +54,7 @@ class FeedController extends Controller
         $publicacao->save();
         if (isset($_FILES['anexo'])) {
             $publicacao->link = $dados['anexo']->store("publicacoes/" . $publicacao->publicacao_id);
+            $publicacao->tipo_link = $mimeType;
             $publicacao->save();
         }
 
@@ -60,7 +63,31 @@ class FeedController extends Controller
 
     function getPublicacoes(Request $req)
     {
-        $publicacoes = [];
+        $publicacoes = DB::select("
+            SELECT 
+                pu.publicacao_id,
+                pu.conteudo,
+                pu.quando,
+                pu.tipo_link,
+                'storage/'||pu.link AS link,
+                u.nome AS usuario,
+                'storage/'||u.foto AS foto
+            FROM 
+                publicacoes pu
+            JOIN usuarios u ON 
+                u.usuario_id = pu.usuario_id
+            WHERE 
+                u.usuario_id = :usuario_id
+                OR u.usuario_id IN (
+                    SELECT c.segue
+                    FROM conexoes c
+                    WHERE c.seguidor = :usuario_id
+                )
+            ORDER BY pu.quando DESC
+        ", [
+            "usuario_id" => session('usuario')->usuario_id
+        ]);
+
         return response()->json($publicacoes);
     }
 }

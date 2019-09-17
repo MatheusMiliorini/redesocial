@@ -1,12 +1,16 @@
 const path = require('path');
 
 module.exports = {
-    entry: './public/js/src/feed.js',
+    entry: {
+        'feed': './public/js/src/feed.js',
+        // 'components': './public/js/src/components.js',
+        'conexoes': './public/js/src/conexoes.js',
+    },
     output: {
         path: path.resolve(__dirname, 'public/js/dist'),
-        filename: 'feed.js'
+        filename: '[name].js'
     },
-    mode: "development",
+    mode: "production",
     module: {
         rules: [
             {

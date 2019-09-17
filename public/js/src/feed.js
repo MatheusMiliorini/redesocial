@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import ReactDom from 'react-dom';
 import $ from 'jquery';
 import styled from 'styled-components';
+import { Wrapper, Avatar, P, Icone, MiniBotao } from '../src/components';
+import moment from 'moment';
 
 class Feed extends Component {
     constructor(props) {
@@ -20,15 +22,16 @@ class Feed extends Component {
     }
 
     atualizaFeed() {
-        console.log("Feed Atualizado");
         $.ajax({
             url: "/feed/publicacoes",
             method: "GET",
             success: (publicacoes) => {
-
+                this.setState({
+                    publicacoes
+                });
             },
             error: (data) => {
-
+                disparaErro("Ocorreu um erro ao buscar as publicações. Por favor, verifique sua conexão e tente novamente");
             }
         });
     }
@@ -37,6 +40,7 @@ class Feed extends Component {
         return (
             <React.Fragment>
                 <CriarPublicacao atualizaFeed={this.atualizaFeed} />
+                <Publicacoes publicacoes={this.state.publicacoes} />
             </React.Fragment>
         )
     }
@@ -115,16 +119,6 @@ class CriarPublicacao extends Component {
 
     render() {
 
-        const Icone = styled.i`
-            color: var(--mostarda);
-            font-size: 1.2rem;
-        `;
-
-        const MiniBotao = styled.button`
-            border: 1px solid #2E4052;
-            margin-right: 0.5rem;
-        `;
-
         const P = styled.p`
             color: white;
             display: inline-block;
@@ -162,6 +156,70 @@ class CriarPublicacao extends Component {
         )
     }
 }
+
+function Publicacoes(props) {
+    return props.publicacoes.map((publicacao, i) => <Publicacao key={i} publicacao={publicacao} />)
+}
+
+class Publicacao extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            ...props.publicacao,
+        };
+    }
+
+    render() {
+
+        const BlocoPublicacao = styled.div`
+            border-radius: 0.25rem;
+            border: 1px solid white;
+            clear: both;
+            padding: 0.5rem;
+            margin-bottom: 0.25rem;
+        `;
+
+        return (
+            <Wrapper>
+                <Avatar src={this.state.foto} style={{ marginBottom: "0.5rem" }} />
+                <P>{this.state.usuario}</P>
+                <P style={{ float: "right", fontSize: "0.8rem" }}>{moment(this.state.quando).fromNow()}</P>
+                <BlocoPublicacao>
+                    <P>{this.state.conteudo}</P>
+                    {(this.state.link && this.state.tipo_link.includes("image")) &&
+                        <div style={{ textAlign: "center" }}>
+                            <img src={this.state.link}
+                                style={{ maxWidth: "100%", maxHeight: "200px" }} />
+                        </div>
+                    }
+                    {(this.state.link && this.state.tipo_link.includes("video")) &&
+                        <div style={{ textAlign: "center" }}>
+                            <video
+                                controls
+                                style={{ maxWidth: "100%", maxHeight: "200px" }}>
+                                <source src={this.state.link} type={this.state.tipo_link} />
+                            </video>
+                        </div>
+                    }
+                </BlocoPublicacao>
+
+                <Botao title="Curtir Publicação" className="far fa-thumbs-up" />
+                <Botao title="Responder/Ver respostas" className="far fa-comment" />
+                <Botao title="Traduzir" className="fas fa-language" />
+            </Wrapper >
+        )
+    }
+}
+
+function Botao(props) {
+    return (
+        <MiniBotao type="button" className="btn" title={props.title}>
+            <Icone className={props.className} />
+        </MiniBotao>
+    )
+}
+
+moment.locale('pt-br');
 
 ReactDom.render(
     <Feed />,

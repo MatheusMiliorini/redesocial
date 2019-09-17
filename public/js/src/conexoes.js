@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import ReactDom from 'react-dom';
 import $ from 'jquery';
 import styled from 'styled-components';
+import { Wrapper, Avatar, P } from './components';
 
 class Conexoes extends Component {
     constructor(props) {
@@ -169,27 +170,6 @@ class Usuario extends Component {
     }
 
     render() {
-        const Wrapper = styled.div`
-            border-bottom: 1px solid white;
-            margin-top: 1rem;
-            padding-bottom: 1rem;
-            overflow: auto;
-        `;
-
-        const Avatar = styled.img`
-            height: 3rem;
-            width: 3rem;
-            border-radius: 50%;
-            float: left;
-            margin-right: 1rem;
-        `;
-
-        const P = styled.p`
-            color: white;
-            display: inline-block;
-            margin: 0;
-        `;
-
         const P2 = styled.p`
             color: white;
             font-weight: bold;
