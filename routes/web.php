@@ -31,8 +31,12 @@ Route::middleware(['UserLogged'])->group(function () {
 
     Route::prefix("/feed")->group(function () {
         Route::get("/", 'FeedController@mostraFeed');
-        Route::get("/publicacoes", 'FeedController@getPublicacoes');
-        Route::post("/publicacoes", 'FeedController@addPublicao');
+        Route::prefix("/publicacoes")->group(function () {
+            Route::get("/", 'FeedController@getPublicacoes');
+            Route::post("/", 'FeedController@addPublicao');
+            Route::delete("/{publicacao_id}", 'FeedController@deletaPublicao');
+            Route::post("/curtir/{publicacao_id}", 'FeedController@curtirPublicacao');
+        });
     });
 
     Route::prefix("/conexoes")->group(function () {

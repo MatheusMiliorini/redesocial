@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Publicacao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class FeedController extends Controller
 {
@@ -27,7 +28,7 @@ class FeedController extends Controller
         ]);
 
         $mimeType = null;
-        
+
         // Verifica se o anexo é foto ou vídeo
         if (isset($_FILES['anexo'])) {
             // Valida o formato
@@ -51,6 +52,7 @@ class FeedController extends Controller
         $publicacao = new Publicacao();
         $publicacao->usuario_id = session("usuario")->usuario_id;
         $publicacao->conteudo = $dados['conteudo'];
+        $publicacao->quando = date("Y-m-d H:i:s");
         $publicacao->save();
         if (isset($_FILES['anexo'])) {
             $publicacao->link = $dados['anexo']->store("publicacoes/" . $publicacao->publicacao_id);
@@ -61,7 +63,7 @@ class FeedController extends Controller
         DB::commit();
     }
 
-    function getPublicacoes(Request $req)
+    function getPublicacoes()
     {
         $publicacoes = DB::select("
             SELECT 
@@ -71,7 +73,14 @@ class FeedController extends Controller
                 pu.tipo_link,
                 'storage/'||pu.link AS link,
                 u.nome AS usuario,
-                'storage/'||u.foto AS foto
+                'storage/'||u.foto AS foto,
+                CASE WHEN pu.usuario_id = :usuario_id THEN TRUE ELSE FALSE END AS minha_publicacao,
+                CASE WHEN (
+                    SELECT COUNT(*) AS liked
+                    FROM likes_publicacao
+                    WHERE usuario_id = :usuario_id
+                    AND publicacao_id = pu.publicacao_id
+                ) > 0 THEN TRUE ELSE FALSE END AS liked
             FROM 
                 publicacoes pu
             JOIN usuarios u ON 
@@ -89,5 +98,66 @@ class FeedController extends Controller
         ]);
 
         return response()->json($publicacoes);
+    }
+
+    /**
+     * Verifica se a publicação é do usuário que solicitou a exclusão e deleta
+     * @param int $publicacao_id
+     */
+    function deletaPublicao(int $publicacao_id)
+    {
+        $publicacao = Publicacao::find($publicacao_id);
+        if ($publicacao->usuario_id === session("usuario")->usuario_id) {
+            $link = $publicacao->link; // Armazena pois não ficará disponível após apagar a publicação
+            $publicacao->delete();
+
+            if (!empty($link)) {
+                Storage::delete($link);
+            }
+
+            return response()->json([
+                "status" => "success",
+            ]);
+        } else {
+            return \response()->json([
+                "erro" => "Você não pode deletar esta publicação!",
+            ], 401);
+        }
+    }
+
+    /**
+     * Curti ou descurte uma publicação
+     * @param int $publicacao_id
+     */
+    function curtirPublicacao(int $publicacao_id)
+    {
+        $like = DB::select("
+            SELECT *
+            FROM likes_publicacao
+            WHERE usuario_id = :usuario_id
+            AND publicacao_id = :publicacao_id
+        ", [
+            'usuario_id' => session("usuario")->usuario_id,
+            'publicacao_id' => $publicacao_id,
+        ]);
+
+        if (!$like) {
+            // Cria o like
+            DB::insert("
+                INSERT INTO likes_publicacao(usuario_id, publicacao_id) VALUES (?, ?)
+            ", [
+                session("usuario")->usuario_id,
+                $publicacao_id
+            ]);
+        } else {
+            // Remove o like
+            DB::delete("
+                DELETE FROM likes_publicacao
+                WHERE usuario_id = ? AND publicacao_id = ?
+            ", [
+                session("usuario")->usuario_id,
+                $publicacao_id
+            ]);
+        }
     }
 }

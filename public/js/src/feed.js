@@ -4,6 +4,7 @@ import $ from 'jquery';
 import styled from 'styled-components';
 import { Wrapper, Avatar, P, Icone, MiniBotao } from '../src/components';
 import moment from 'moment';
+import PubSub from 'pubsub-js';
 
 class Feed extends Component {
     constructor(props) {
@@ -19,15 +20,24 @@ class Feed extends Component {
     componentDidMount() {
         // Busca as publicações
         this.atualizaFeed();
+
+        PubSub.subscribe("ATUALIZAR_FEED", () => {
+            this.atualizaFeed();
+        });
     }
 
     atualizaFeed() {
         $.ajax({
             url: "/feed/publicacoes",
             method: "GET",
-            success: (publicacoes) => {
+            success: (data) => {
+                // Limpa as publicações
                 this.setState({
-                    publicacoes
+                    publicacoes: [],
+                });
+                // Recria com o retornado do servidor
+                this.setState({
+                    publicacoes: data,
                 });
             },
             error: (data) => {
@@ -39,7 +49,7 @@ class Feed extends Component {
     render() {
         return (
             <React.Fragment>
-                <CriarPublicacao atualizaFeed={this.atualizaFeed} />
+                <CriarPublicacao />
                 <Publicacoes publicacoes={this.state.publicacoes} />
             </React.Fragment>
         )
@@ -53,6 +63,7 @@ class CriarPublicacao extends Component {
             anexoAdicionado: false,
             nomeAnexo: null,
             texto: "",
+            enviandoAjax: false,
         }
 
         // Binds
@@ -80,6 +91,9 @@ class CriarPublicacao extends Component {
     }
 
     salvaPublicacao() {
+        this.setState({
+            enviandoAjax: true,
+        });
         const formData = new FormData();
         formData.append("conteudo", this.state.texto);
         formData.append("anexo", document.getElementById("anexo").files[0]);
@@ -92,7 +106,7 @@ class CriarPublicacao extends Component {
             processData: false,
             data: formData,
             headers: headerAjax,
-            success: (data) => {
+            success: () => {
                 swal({
                     title: "Publicação realizada com sucesso!",
                     icon: "success",
@@ -103,9 +117,10 @@ class CriarPublicacao extends Component {
                     anexoAdicionado: false,
                     nomeAnexo: null,
                     texto: "",
+                    enviandoAjax: false,
                 });
 
-                this.props.atualizaFeed();
+                PubSub.publish("ATUALIZAR_FEED");
             },
             error: (data) => {
                 if (data.responseJSON.erro) {
@@ -113,6 +128,10 @@ class CriarPublicacao extends Component {
                 } else {
                     disparaErro("Ocorreu um erro ao realizar a publicação. Por favor, cheque sua conexão e tente novamente.");
                 }
+
+                this.setState({
+                    enviandoAjax: false,
+                })
             }
         });
     }
@@ -146,7 +165,7 @@ class CriarPublicacao extends Component {
                     <MiniBotao
                         type="button"
                         className="btn"
-                        disabled={this.state.texto === ""}
+                        disabled={this.state.texto === "" || this.state.enviandoAjax === true}
                         title={this.state.texto === "" ? "Escrevar algo para publicar" : ""}
                         onClick={this.salvaPublicacao}>
                         <P>Publicar</P><Icone className="far fa-paper-plane" title="Salvar" />
@@ -166,7 +185,87 @@ class Publicacao extends Component {
         super(props);
         this.state = {
             ...props.publicacao,
+            liking: false,
         };
+
+        // Binds
+        this.excluirPublicacao = this.excluirPublicacao.bind(this);
+        this.curtirPublicacao = this.curtirPublicacao.bind(this);
+    }
+
+    excluirPublicacao() {
+        swal({
+            title: "Excluir publicação",
+            text: "Tem certeza que deseja excluir essa publicação?",
+            icon: "warning",
+            buttons: {
+                cancel: {
+                    visible: true,
+                    text: "Cancelar",
+                },
+                confirm: {
+                    visible: true,
+                    text: "Confirmar",
+                    closeModal: false,
+                }
+            }
+        }).then(val => {
+            if (!val) {
+                return false;
+            }
+
+            $.ajax({
+                url: `/feed/publicacoes/${this.state.publicacao_id}`,
+                method: "DELETE",
+                headers: headerAjax,
+                success: (data) => {
+                    PubSub.publish("ATUALIZAR_FEED");
+                    swal({
+                        title: "Sucesso!",
+                        text: "Publicação excluída com sucesso.",
+                        icon: "success",
+                        timer: 1500,
+                    });
+                },
+                error: (data) => {
+                    if (data.responseJSON && data.responseJSON.erro) {
+                        disparaErro(data.responseJSON.erro);
+                    } else {
+                        disparaErro("Ocorreu um erro ao excluir a publicação. Por favor, verifique sua conexão e tente novamente");
+                    }
+                }
+            });
+        })
+    }
+
+    curtirPublicacao() {
+        this.setState({
+            liking: true,
+        })
+        $.ajax({
+            url: `/feed/publicacoes/curtir/${this.state.publicacao_id}`,
+            method: "POST",
+            headers: headerAjax,
+            success: () => {
+                this.setState(state => {
+                    return {
+                        liked: !state.liked,
+                        liking: false,
+                    }
+                })
+            },
+            error: (data) => {
+                if (data.responseJSON.erro) {
+                    disparaErro(data.responseJSON.erro);
+                } else {
+                    disparaErro("Ocorreu um erro ao curtir a publicação. Por favor, cheque sua conexão e tente novamente.");
+                }
+
+                this.setState({
+                    liking: false,
+                })
+            }
+        });
     }
 
     render() {
@@ -182,8 +281,10 @@ class Publicacao extends Component {
         return (
             <Wrapper>
                 <Avatar src={this.state.foto} style={{ marginBottom: "0.5rem" }} />
+
                 <P>{this.state.usuario}</P>
                 <P style={{ float: "right", fontSize: "0.8rem" }}>{moment(this.state.quando).fromNow()}</P>
+
                 <BlocoPublicacao>
                     <P>{this.state.conteudo}</P>
                     {(this.state.link && this.state.tipo_link.includes("image")) &&
@@ -203,9 +304,17 @@ class Publicacao extends Component {
                     }
                 </BlocoPublicacao>
 
-                <Botao title="Curtir Publicação" className="far fa-thumbs-up" />
+                <Botao
+                    liking={this.state.liking}
+                    onClick={this.curtirPublicacao}
+                    title={this.state.liked ? "Publicação curtida" : "Curtir Publicação"}
+                    className={this.state.liked ? "fas fa-thumbs-up" : "far fa-thumbs-up"} />
                 <Botao title="Responder/Ver respostas" className="far fa-comment" />
                 <Botao title="Traduzir" className="fas fa-language" />
+                {/* Excluir publicação */}
+                {this.state.minha_publicacao === true &&
+                    <Botao onClick={this.excluirPublicacao} btnExcluir="true" title="Excluir Publicação" className="far fa-trash-alt" />
+                }
             </Wrapper >
         )
     }
@@ -213,8 +322,14 @@ class Publicacao extends Component {
 
 function Botao(props) {
     return (
-        <MiniBotao type="button" className="btn" title={props.title}>
-            <Icone className={props.className} />
+        <MiniBotao
+            onClick={props.onClick}
+            type="button"
+            className="btn"
+            disabled={props.liking}
+            title={props.title}
+            style={props.btnExcluir ? { float: "right", margin: 0 } : null}>
+            <Icone style={props.btnExcluir ? { color: "#b72e2e" } : null} className={props.className} />
         </MiniBotao>
     )
 }
