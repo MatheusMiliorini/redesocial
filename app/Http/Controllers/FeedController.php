@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Publicacao;
+use App\Models\RespostaPublicacao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -80,7 +81,12 @@ class FeedController extends Controller
                     FROM likes_publicacao
                     WHERE usuario_id = :usuario_id
                     AND publicacao_id = pu.publicacao_id
-                ) > 0 THEN TRUE ELSE FALSE END AS liked
+                ) > 0 THEN TRUE ELSE FALSE END AS liked,
+                (
+                    SELECT count(*)
+                    FROM likes_publicacao lp
+                    WHERE lp.publicacao_id = pu.publicacao_id
+                ) AS likes
             FROM 
                 publicacoes pu
             JOIN usuarios u ON 
@@ -159,5 +165,82 @@ class FeedController extends Controller
                 $publicacao_id
             ]);
         }
+    }
+
+    /**
+     * Retorna os comentários de uma publicação
+     * @param int $publicacao_id
+     * @return array
+     */
+    function getComentarios(int $publicacao_id)
+    {
+        $dados = DB::select("
+            SELECT
+                rp.publicacao_id,
+                rp.rp_id,
+                rp.conteudo,
+                rp.quando,
+                rp.tipo_link,
+                'storage/' || rp.link AS link,
+                u.nome AS usuario,
+                'storage/' || u.foto AS foto
+            FROM
+                respostas_publicacao rp
+            JOIN usuarios u ON
+                rp.usuario_id = u.usuario_id
+            WHERE rp.publicacao_id = :publicacao_id
+        ", [
+            'publicacao_id' => $publicacao_id
+        ]);
+
+        return response()->json($dados);
+    }
+
+    /**
+     * Salva um comentário em uma publicacação
+     */
+    function salvaComentario(Request $req, int $publicacao_id)
+    {
+        $dados =  $req->validate([
+            "conteudo"  => "required",
+            "anexo"     => "nullable",
+            "nomeAnexo" => "nullable",
+        ]);
+
+        $mimeType = null;
+
+        // Verifica se o anexo é foto ou vídeo
+        if (isset($_FILES['anexo'])) {
+            // Valida o formato
+            $mimeType = mime_content_type($_FILES['anexo']['tmp_name']);
+            if (strpos($mimeType, 'image') === false && strpos($mimeType, 'video') === false) {
+                return response()->json([
+                    "erro" => "Por favor, somente formatos de imagem e vídeo são suportados."
+                ], 401);
+            }
+
+            // Valida o tamanho
+            if ($_FILES['anexo']['size'] > 8000000) {
+                return response()->json([
+                    "erro" => "Por favor, apenas arquivos com até 8MB são suportados."
+                ], 401);
+            }
+        }
+
+        DB::beginTransaction();
+
+        $rp = new RespostaPublicacao();
+        $rp->publicacao_id = $publicacao_id;
+        $rp->usuario_id = session("usuario")->usuario_id;
+        $rp->conteudo = $dados['conteudo'];
+        $rp->quando = date("Y-m-d H:i:s");
+        $rp->save();
+        if (isset($_FILES['anexo'])) {
+            $rp->link = $dados['anexo']->store("publicacoes/" . $rp->publicacao_id . "/respostas");
+            $rp->tipo_link = $mimeType;
+            $rp->save();
+        }
+
+        DB::commit();
     }
 }

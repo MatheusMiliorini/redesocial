@@ -30,3 +30,11 @@ export const MiniBotao = styled.button`
     border: 1px solid #2E4052;
     margin-right: 0.5rem;
 `;
+
+export const BlocoPublicacao = styled.div`
+    border-radius: 0.25rem;
+    border: 1px solid white;
+    clear: both;
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+`;

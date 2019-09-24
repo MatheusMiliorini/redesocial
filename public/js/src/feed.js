@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import ReactDom from 'react-dom';
 import $ from 'jquery';
 import styled from 'styled-components';
-import { Wrapper, Avatar, P, Icone, MiniBotao } from '../src/components';
+import { Wrapper, Avatar, P, Icone, MiniBotao, BlocoPublicacao } from '../src/components';
 import moment from 'moment';
 import PubSub from 'pubsub-js';
 
@@ -48,10 +48,10 @@ class Feed extends Component {
 
     render() {
         return (
-            <React.Fragment>
-                <CriarPublicacao />
+            <>
+                <CriarPublicacao url="/feed/publicacoes" publish_url="ATUALIZAR_FEED" />
                 <Publicacoes publicacoes={this.state.publicacoes} />
-            </React.Fragment>
+            </>
         )
     }
 }
@@ -64,16 +64,18 @@ class CriarPublicacao extends Component {
             nomeAnexo: null,
             texto: "",
             enviandoAjax: false,
+            idAnexo: new Date().getTime()
         }
 
         // Binds
         this.handleAnexo = this.handleAnexo.bind(this);
         this.handleTexto = this.handleTexto.bind(this);
+        this.addAnexo = this.addAnexo.bind(this);
         this.salvaPublicacao = this.salvaPublicacao.bind(this);
     }
 
     addAnexo() {
-        $('#anexo').trigger('click');
+        $("#" + this.state.idAnexo).trigger('click');
     }
 
     handleAnexo(e) {
@@ -96,11 +98,11 @@ class CriarPublicacao extends Component {
         });
         const formData = new FormData();
         formData.append("conteudo", this.state.texto);
-        formData.append("anexo", document.getElementById("anexo").files[0]);
+        formData.append("anexo", document.getElementById(this.state.idAnexo).files[0]);
         formData.append("nomeAnexo", this.state.nomeAnexo);
 
         $.ajax({
-            url: "/feed/publicacoes",
+            url: this.props.url,
             method: "POST",
             contentType: false,
             processData: false,
@@ -120,7 +122,7 @@ class CriarPublicacao extends Component {
                     enviandoAjax: false,
                 });
 
-                PubSub.publish("ATUALIZAR_FEED");
+                PubSub.publish(this.props.publish_url);
             },
             error: (data) => {
                 if (data.responseJSON.erro) {
@@ -153,7 +155,7 @@ class CriarPublicacao extends Component {
                     value={this.state.texto}
                     onChange={this.handleTexto} />
                 <div style={{ marginTop: "0.5rem" }}>
-                    <input id="anexo" type="file" style={{ display: "none" }} onChange={this.handleAnexo} />
+                    <input id={this.state.idAnexo} type="file" style={{ display: "none" }} onChange={this.handleAnexo} />
                     <MiniBotao type="button" className="btn" onClick={this.addAnexo}>
                         <Icone
                             className="fas fa-paperclip"
@@ -191,6 +193,7 @@ class Publicacao extends Component {
         // Binds
         this.excluirPublicacao = this.excluirPublicacao.bind(this);
         this.curtirPublicacao = this.curtirPublicacao.bind(this);
+        this.abreModal = this.abreModal.bind(this);
     }
 
     excluirPublicacao() {
@@ -251,6 +254,7 @@ class Publicacao extends Component {
                     return {
                         liked: !state.liked,
                         liking: false,
+                        likes: !state.liked ? state.likes + 1 : state.likes - 1
                     }
                 })
             },
@@ -268,15 +272,11 @@ class Publicacao extends Component {
         });
     }
 
-    render() {
+    abreModal() {
+        PubSub.publish("ABRIR_MODAL", this.state.publicacao_id);
+    }
 
-        const BlocoPublicacao = styled.div`
-            border-radius: 0.25rem;
-            border: 1px solid white;
-            clear: both;
-            padding: 0.5rem;
-            margin-bottom: 0.25rem;
-        `;
+    render() {
 
         return (
             <Wrapper>
@@ -307,9 +307,9 @@ class Publicacao extends Component {
                 <Botao
                     liking={this.state.liking}
                     onClick={this.curtirPublicacao}
-                    title={this.state.liked ? "Publicação curtida" : "Curtir Publicação"}
+                    title={this.state.likes + " likes"}
                     className={this.state.liked ? "fas fa-thumbs-up" : "far fa-thumbs-up"} />
-                <Botao title="Responder/Ver respostas" className="far fa-comment" />
+                <Botao title="Responder/Ver respostas" onClick={this.abreModal} className="far fa-comment" />
                 <Botao title="Traduzir" className="fas fa-language" />
                 {/* Excluir publicação */}
                 {this.state.minha_publicacao === true &&
@@ -334,9 +334,103 @@ function Botao(props) {
     )
 }
 
+class Comentarios extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            comentarios: [],
+            publicacao_id: null
+        }
+
+        // Binds
+        this.atualizarRespostas = this.atualizarRespostas.bind(this);
+    }
+
+    componentDidMount() {
+        PubSub.subscribe("ABRIR_MODAL", (e, publicacao_id) => {
+            this.setState({
+                publicacao_id
+            });
+
+            this.atualizarRespostas();
+        });
+
+        PubSub.subscribe("ATUALIZAR_RESPOSTAS", function () {
+            this.atualizarRespostas();
+        });
+    }
+
+    atualizarRespostas() {
+        $.ajax({
+            url: `/feed/publicacoes/${this.state.publicacao_id}/comentarios`,
+            success: (comentarios) => {
+                // Reseta comentários
+                this.setState({
+                    comentarios: [],
+                });
+                // Popula a lista novamente
+                this.setState({
+                    comentarios,
+                });
+
+                jQuery("#modalComentarios").modal();
+            },
+            error: () => {
+                disparaErro("Ocorreu um erro ao buscar os comentários. Por favor, verifique sua conexão e tente novamente.");
+            }
+        })
+    }
+
+    render() {
+        return (
+            <>
+                <CriarPublicacao
+                    url={"/feed/publicacoes/" + this.state.publicacao_id + "/comentar"}
+                    publish_url="ATUALIZAR_RESPOSTAS" />
+                {this.state.comentarios.map((comentario, i) => <Comentario key={i} comentario={comentario} />)}
+            </>
+        );
+    }
+}
+
+function Comentario(props) {
+    return (
+        <Wrapper>
+            <Avatar src={props.comentario.foto} style={{ marginBottom: "0.5rem" }} />
+
+            <P>{props.comentario.usuario}</P>
+            <P style={{ float: "right", fontSize: "0.8rem" }}>{moment(props.comentario.quando).fromNow()}</P>
+
+            <BlocoPublicacao>
+                <P>{props.comentario.conteudo}</P>
+                {(props.comentario.link && props.comentario.tipo_link.includes("image")) &&
+                    <div style={{ textAlign: "center" }}>
+                        <img src={props.comentario.link}
+                            style={{ maxWidth: "100%", maxHeight: "200px" }} />
+                    </div>
+                }
+                {(props.comentario.link && props.comentario.tipo_link.includes("video")) &&
+                    <div style={{ textAlign: "center" }}>
+                        <video
+                            controls
+                            style={{ maxWidth: "100%", maxHeight: "200px" }}>
+                            <source src={props.comentario.link} type={props.comentario.tipo_link} />
+                        </video>
+                    </div>
+                }
+            </BlocoPublicacao>
+        </Wrapper>
+    )
+}
+
 moment.locale('pt-br');
 
 ReactDom.render(
     <Feed />,
     document.getElementById("feed")
+)
+
+ReactDom.render(
+    <Comentarios />,
+    document.getElementById("corpoModal")
 )

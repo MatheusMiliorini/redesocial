@@ -34,7 +34,11 @@ Route::middleware(['UserLogged'])->group(function () {
         Route::prefix("/publicacoes")->group(function () {
             Route::get("/", 'FeedController@getPublicacoes');
             Route::post("/", 'FeedController@addPublicao');
+
             Route::delete("/{publicacao_id}", 'FeedController@deletaPublicao');
+            Route::get("/{publicacao_id}/comentarios", 'FeedController@getComentarios');
+            Route::post("/{publicacao_id}/comentar", 'FeedController@salvaComentario');
+
             Route::post("/curtir/{publicacao_id}", 'FeedController@curtirPublicacao');
         });
     });

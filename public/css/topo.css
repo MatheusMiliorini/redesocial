@@ -1,6 +1,7 @@
 :root {
     --mostarda: #FFC857;
     --azul-bonito: #3483d2;
+    --fundo-cinza: #15202b;
 }
 
 .swal-text {
@@ -9,7 +10,15 @@
 
 html, body {
     height: 100%;
-    background-color: #15202b;
+    background-color: var(--fundo-cinza);
+}
+
+.modal-content {
+    background-color: var(--fundo-cinza);
+}
+
+.modal-title {
+    color: white;
 }
 
 .nav {
