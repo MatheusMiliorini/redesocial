@@ -29,6 +29,8 @@ Route::middleware(['UserLogged'])->group(function () {
     Route::get("/completarcadastro", "AuthController@completarCadastro");
     Route::post("/completarcadastro", "AuthController@completarCadastroPost");
 
+    Route::post("/traduzir", 'TraducaoController@traduzir');
+
     Route::prefix("/feed")->group(function () {
         Route::get("/", 'FeedController@mostraFeed');
         Route::prefix("/publicacoes")->group(function () {

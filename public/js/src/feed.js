@@ -24,6 +24,41 @@ class Feed extends Component {
         PubSub.subscribe("ATUALIZAR_FEED", () => {
             this.atualizaFeed();
         });
+
+        PubSub.subscribe("TRADUZIR", (msg, data) => {
+            $.ajax({
+                url: "/traduzir",
+                method: "POST",
+                headers: headerAjax,
+                data: {
+                    texto: data,
+                },
+                success: (traducao) => {
+                    if (traducao.text) {
+                        swal({
+                            icon: "info",
+                            text: `Traduzido de ${traducao.source}: ${traducao.text}`,
+                            buttons: {
+                                confirm: {
+                                    visible: true,
+                                    closeModal: true,
+                                    text: "OK"
+                                }
+                            }
+                        })
+                    } else {
+                        disparaErro("Ocorreu um erro ao traduzir o texto. Por favor, cheque sua conexão e tente novamente.");
+                    }
+                },
+                error: (data) => {
+                    if (data.responseJSON.erro) {
+                        disparaErro(data.responseJSON.erro);
+                    } else {
+                        disparaErro("Ocorreu um erro ao traduzir o texto. Por favor, cheque sua conexão e tente novamente.");
+                    }
+                }
+            });
+        });
     }
 
     atualizaFeed() {
@@ -194,6 +229,7 @@ class Publicacao extends Component {
         this.excluirPublicacao = this.excluirPublicacao.bind(this);
         this.curtirPublicacao = this.curtirPublicacao.bind(this);
         this.abreModal = this.abreModal.bind(this);
+        this.traduzir = this.traduzir.bind(this);
     }
 
     excluirPublicacao() {
@@ -276,6 +312,10 @@ class Publicacao extends Component {
         PubSub.publish("ABRIR_MODAL", this.state.publicacao_id);
     }
 
+    traduzir() {
+        PubSub.publish("TRADUZIR", this.state.conteudo);
+    }
+
     render() {
 
         return (
@@ -310,7 +350,7 @@ class Publicacao extends Component {
                     title={this.state.likes + " likes"}
                     className={this.state.liked ? "fas fa-thumbs-up" : "far fa-thumbs-up"} />
                 <Botao title="Responder/Ver respostas" onClick={this.abreModal} className="far fa-comment" />
-                <Botao title="Traduzir" className="fas fa-language" />
+                <Botao title="Traduzir" className="fas fa-language" onClick={this.traduzir} />
                 {/* Excluir publicação */}
                 {this.state.minha_publicacao === true &&
                     <Botao onClick={this.excluirPublicacao} btnExcluir="true" title="Excluir Publicação" className="far fa-trash-alt" />
@@ -446,6 +486,10 @@ function Comentario(props) {
         })
     }
 
+    function traduzir() {
+        PubSub.publish("TRADUZIR", props.comentario.conteudo);
+    }
+
     return (
         <Wrapper>
             <Avatar src={props.comentario.foto} style={{ marginBottom: "0.5rem" }} />
@@ -471,6 +515,9 @@ function Comentario(props) {
                     </div>
                 }
             </BlocoPublicacao>
+
+            {/* Traduzir */}
+            <Botao title="Traduzir" className="fas fa-language" onClick={traduzir} />
 
             {/* Excluir comentário */}
             {props.comentario.minha_publicacao === true &&
