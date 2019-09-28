@@ -107,6 +107,90 @@ $("#btnLogar").click(function (e) {
     })
 });
 
+$("#btnRecuperarSenha").click(function () {
+    let email = $('#email').val();
+
+    $.ajax({
+        url: "/recuperarSenha",
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        data: {
+            email
+        },
+        success: () => {
+            swal({
+                title: "Sucesso!",
+                text: "Verifique sua caixa de entrada para continuar",
+            });
+            setTimeout(() => {
+                location.href = '/login';
+            }, 1000);
+        },
+        error: (data) => {
+            const { erro } = data.responseJSON;
+            if (erro) {
+                swal({
+                    title: "Oops",
+                    icon: "error",
+                    text: erro,
+                })
+            } else {
+                swal({
+                    title: "Oops",
+                    icon: "error",
+                    text: "Ocorreu um erro ao enviar o e-mail de recuperação."
+                })
+            }
+        }
+    })
+});
+
+$("#btnSalvarSenha").click(function () {
+    let senha = $("#senha").val(),
+        senha2 = $("#senha2").val();
+
+    $.ajax({
+        url: "/recuperarSenha",
+        method: "PUT",
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        data: {
+            senha,
+            senha2,
+            token_recuperacao
+        },
+        success: () => {
+            swal({
+                title: "Sucesso!",
+                icon: 'success',
+                text: "Senha alterada com sucesso",
+            });
+            setTimeout(() => {
+                location.href = '/login';
+            }, 1000);
+        },
+        error: (data) => {
+            const { erro } = data.responseJSON;
+            if (erro) {
+                swal({
+                    title: "Oops",
+                    icon: "error",
+                    text: erro,
+                })
+            } else {
+                swal({
+                    title: "Oops",
+                    icon: "error",
+                    text: "Ocorreu um erro ao alterar a senha. Por favor, cheque sua conexão e tente novamente.",
+                })
+            }
+        }
+    })
+});
+
 /**
  * Clicar na imagem abre o upload
  */

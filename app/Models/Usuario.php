@@ -11,6 +11,6 @@ class Usuario extends Model
     public $timestamps = false;
     protected $fillable = [
         'nome', 'email', 'senha', 'foto', 'localizacao', 'nascimento', 'site', 'biografia',
-        'url_unica', 'completou_login',
+        'url_unica', 'completou_login', 'token_recuperacao'
     ];
 }

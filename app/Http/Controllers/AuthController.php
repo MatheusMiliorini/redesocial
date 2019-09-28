@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
 
 class AuthController extends Controller
 {
@@ -42,7 +45,7 @@ class AuthController extends Controller
             ]);
         } else {
             return response()->json([
-                "erro" => "Usuário não localizado!",
+                "erro" => "Dados de login incorretos!",
             ], 404);
         }
     }
@@ -287,5 +290,108 @@ class AuthController extends Controller
         ]);
 
         return response()->json($idiomas);
+    }
+
+    public function recuperarSenha()
+    {
+        return view('recuperarSenha', [
+            'title' => 'Recuperar senha'
+        ]);
+    }
+
+    /**
+     * Usuário chega aqui a partir do e-mail
+     */
+    public function recuperarSenhaToken(string $token)
+    {
+        $usuario = Usuario::where('token_recuperacao', $token)->first();
+
+        if (!$usuario) {
+            return redirect('/login');
+        }
+
+        return view('atualizarSenha', [
+            'title' => 'Atualizar Senha',
+            'token' => $token,
+        ]);
+    }
+
+    /**
+     * Essa é a função que dá update na senha no banco
+     */
+    function recuperarSenhaPut(Request $req)
+    {
+        $dados = $req->validate([
+            'senha' => 'required',
+            'senha2' => 'required',
+            'token_recuperacao' => 'required|exists:usuarios'
+        ]);
+
+        if ($dados['senha'] !== $dados['senha2']) {
+            return response()->json([
+                'erro' => 'As senhas não correspondem!',
+            ], 401);
+        }
+
+        $usuario = Usuario::where('token_recuperacao', $dados['token_recuperacao'])->first();
+        $usuario->senha = Hash::make($dados['senha']);
+        $usuario->token_recuperacao = null;
+        $usuario->save();
+
+        return response()->json([
+            'status' => 'success',
+        ]);
+    }
+
+    /**
+     * Envia e-mail com o token para recuperação de senha
+     */
+    public function recuperarSenhaPost(Request $req)
+    {
+        $usuario = Usuario::where('email', $req->email)->first();
+
+        if (!$usuario) {
+            return response()->json([
+                'erro' => 'Usuário não localizado!'
+            ], 404);
+        }
+
+        $usuario->token_recuperacao = md5('duck' . $usuario->url_unica);
+
+        $mail = new PHPMailer(true);
+
+        try {
+            //Server settings
+            $mail->SMTPDebug = SMTP::DEBUG_SERVER;                      // Enable verbose debug output
+            $mail->isSMTP();                                            // Send using SMTP
+            $mail->Host       = 'smtp.gmail.com';                    // Set the SMTP server to send through
+            $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
+            $mail->Username   = 'miliorinimatheustc@gmail.com';                     // SMTP username
+            $mail->Password   = env("MAIL_PASSWORD");                               // SMTP password
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` also accepted
+            $mail->Port       = 587;                                    // TCP port to connect to
+
+            //Recipients
+            $mail->setFrom('miliorinimatheustc@gmail.com', 'Rede Social');
+            $mail->addAddress($usuario->email);     // Add a recipient
+
+            // Content
+            $mail->isHTML(true);                                  // Set email format to HTML
+            $mail->Subject = 'Recuperar senha';
+            $mail->Body    = '<p>Olá!</p><p>Utilize este link para recuperar sua senha: https://miliorini.ml/recuperarSenha/' . $usuario->token_recuperacao . '.</p>';
+
+            $mail->send();
+
+            $usuario->save();
+
+            return response()->json([
+                'status' => 'success'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'erro' => 'Ocorreu um erro ao enviar o e-mail!',
+                'realError' => $mail->ErrorInfo
+            ], 500);
+        }
     }
 }

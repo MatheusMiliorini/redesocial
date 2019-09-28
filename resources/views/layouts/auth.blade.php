@@ -30,4 +30,6 @@
     <script src="{{asset('js/auth.js')}}"></script>
 </body>
 
+@yield('scripts')
+
 </html>

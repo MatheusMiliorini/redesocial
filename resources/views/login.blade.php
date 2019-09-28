@@ -13,5 +13,6 @@
         <button class="btn btn-success" style="width: 100%" id="btnLogar">Logar</button>
     </div>
     <a href="/cadastro">Não tenho conta</a>
+    <a style="float: right" href="/recuperarSenha">Esqueci minha senha</a>
 </form>
 @endsection

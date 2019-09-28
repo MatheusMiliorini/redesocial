@@ -25,6 +25,11 @@ Route::post("/login", "AuthController@iniciaSessao");
 Route::get("/cadastro", "AuthController@cadastro");
 Route::post("/cadastro", "AuthController@insereUsuario");
 
+Route::get('/recuperarSenha', 'AuthController@recuperarSenha'); // Form para inserir e-mail
+Route::get('/recuperarSenha/{token}', 'AuthController@recuperarSenhaToken'); // Form para mudar senha
+Route::post('/recuperarSenha', 'AuthController@recuperarSenhaPost'); // Envia o e-mail
+Route::put('/recuperarSenha', 'AuthController@recuperarSenhaPut');   // Atualiza a senha
+
 Route::middleware(['UserLogged'])->group(function () {
     Route::get("/completarcadastro", "AuthController@completarCadastro");
     Route::post("/completarcadastro", "AuthController@completarCadastroPost");
