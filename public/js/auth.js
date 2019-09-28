@@ -122,11 +122,12 @@ $("#btnRecuperarSenha").click(function () {
         success: () => {
             swal({
                 title: "Sucesso!",
-                text: "Verifique sua caixa de entrada para continuar",
+                icon: 'info',
+                text: "Verifique sua caixa de entrada/spam para continuar.",
             });
             setTimeout(() => {
                 location.href = '/login';
-            }, 1000);
+            }, 1500);
         },
         error: (data) => {
             const { erro } = data.responseJSON;
