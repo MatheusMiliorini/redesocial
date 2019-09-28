@@ -30,8 +30,10 @@
                 <i class="fas fa-user-friends"></i>
             </a>
         </li>
-        <li class="nav-item" title="Meu Perfil">
-            <i class="fas fa-user"></i>
+        <li class="nav-item {{$title === 'Meu Perfil' ? 'nav-item-selected' : ''}}" title="Meu Perfil">
+            <a href="/meuPerfil">
+                <i class="fas fa-user"></i>
+            </a>
         </li>
         <li class="nav-item" title="Sair">
             <a href="/logout">

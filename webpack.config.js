@@ -3,7 +3,7 @@ const path = require('path');
 module.exports = {
     entry: {
         'feed': './public/js/src/feed.js',
-        // 'components': './public/js/src/components.js',
+        'completarcadastro': './public/js/src/completarcadastro.js',
         'conexoes': './public/js/src/conexoes.js',
     },
     output: {

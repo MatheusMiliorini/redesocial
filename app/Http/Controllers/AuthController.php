@@ -143,4 +143,149 @@ class AuthController extends Controller
         $req->session()->flush();
         return redirect("/login");
     }
+
+    /**
+     * Exibe a view de meu perfil para edição
+     */
+    public function meuPerfil()
+    {
+        $usuario = DB::select("
+            SELECT
+                u.localizacao,
+                u.biografia,
+                u.site,
+                u.biografia,
+                u.url_unica,
+                u.nascimento,
+                COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto
+            FROM
+                usuarios u
+            WHERE usuario_id = ?
+        ", [
+            session('usuario')->usuario_id,
+        ])[0];
+
+        $interesses = DB::select("
+            SELECT
+                int.*
+            FROM
+                interesses int
+            JOIN interesses_usuarios iu ON
+                iu.interesse_id = int.interesse_id
+            WHERE
+                iu.usuario_id = ?
+            ORDER BY
+                int.nome
+        ", [
+            session('usuario')->usuario_id
+        ]);
+
+        return view('meuPerfil', [
+            'title' => 'Meu Perfil',
+            'usuario' => $usuario,
+            'interesses' => $interesses
+        ]);
+    }
+
+    /**
+     * Recebe o POST para editar o perfil do usuário
+     */
+    public function alteraPerfil(Request $req)
+    {
+        $dados = $req->validate([
+            "foto"               => "nullable|image",
+            "localizacao"        => "nullable|string",
+            "nascimento"         => "nullable|date",
+            "site"               => "nullable|string",
+            "biografia"          => "nullable|string",
+            "url_unica"          => "required|string",
+            "interesse_id"       => "required|array|exists:interesses",
+            "idioma_id"          => "required|array|exists:idiomas",
+            "nivel_conhecimento" => "required|array|between:1,5",
+            "novasenha"          => "nullable",
+            "novasenhaconfirm"   => "nullable",
+        ], [
+            "url_unica.required"    => "Por favor, escolha uma URL única para seu perfil.",
+            "interesse_id.required" => "Por favor, selecione ao menos um interesse.",
+            "idioma_id.required"    => "Por favor, selecione ao menos um idioma.",
+            "foto.image"            => "Por favor, escolha uma imagem válida.",
+        ]);
+
+        DB::beginTransaction();
+
+        $usuario = Usuario::find($req->session()->get('usuario')->usuario_id);
+        $url_original = $usuario->url_unica;
+        $foto_original = $usuario->foto;
+
+        $usuario->fill($dados);
+        if (isset($dados['foto'])) {
+            $fotoAntiga = $foto_original;
+            $usuario->foto = $dados['foto']->store('avatares');
+        }
+
+        if ($dados['url_unica'] !== $url_original) {
+            // Verifica se já se encontra em uso
+            $existe = DB::select("SELECT usuario_id FROM usuarios WHERE url_unica = ? AND usuario_id <> ?", [$dados['url_unica'], $usuario->usuario_id]);
+            if ($existe) {
+                return response()->json([
+                    'erro' => 'Esta URL única já se encontra em uso por outro usuário!'
+                ], 401);
+            }
+        }
+
+        // Altera a senha
+        if (!empty($dados['novasenha'])) {
+            if ($dados['novasenha'] === $dados['novasenhaconfirm']) {
+                $usuario->senha = Hash::make($dados['novasenha']);
+            } else {
+                return response()->json([
+                    'erro' => 'As senhas não correspondem!',
+                ], 401);
+            }
+        }
+
+        $usuario->save();
+
+        // Apaga a lista de interesses
+        DB::delete("DELETE FROM interesses_usuarios WHERE usuario_id = ?", [$usuario->usuario_id]);
+        // Insere os interesses
+        $inserts = [];
+        foreach ($dados['interesse_id'] as $interesse) {
+            $inserts[] = ["usuario_id" => $usuario->usuario_id, "interesse_id" => $interesse];
+        }
+        DB::table("interesses_usuarios")->insert($inserts);
+
+        // Limpa a lista de idiomas
+        DB::delete("DELETE FROM idiomas_usuarios WHERE usuario_id = ?", [$usuario->usuario_id]);
+        // Insere os idiomas
+        $inserts = [];
+        foreach ($dados['idioma_id'] as $key => $idioma) {
+            $inserts[] = [
+                "usuario_id" => $usuario->usuario_id,
+                "idioma_id"  => $idioma,
+                "nivel_conhecimento" => $dados['nivel_conhecimento'][$key]
+            ];
+        }
+        DB::table("idiomas_usuarios")->insert($inserts);
+
+        DB::commit();
+
+        if (isset($fotoAntiga)) {
+            Storage::delete($fotoAntiga);
+        }
+    }
+
+    /**
+     * Retorna a lista de idiomas do usuário
+     */
+    public function meusIdiomas()
+    {
+        $idiomas = DB::select("
+            SELECT * FROM idiomas_usuarios WHERE usuario_id = ?
+        ", [
+            session('usuario')->usuario_id
+        ]);
+
+        return response()->json($idiomas);
+    }
 }

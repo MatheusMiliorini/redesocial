@@ -31,6 +31,10 @@ Route::middleware(['UserLogged'])->group(function () {
 
     Route::post("/traduzir", 'TraducaoController@traduzir');
 
+    Route::get("/meuPerfil", 'AuthController@meuPerfil');
+    Route::post("/meuPerfil", 'AuthController@alteraPerfil');
+    Route::get("/meuPerfil/idiomas", 'AuthController@meusIdiomas'); // Usado no React
+
     Route::prefix("/feed")->group(function () {
         Route::get("/", 'FeedController@mostraFeed');
         Route::prefix("/publicacoes")->group(function () {
