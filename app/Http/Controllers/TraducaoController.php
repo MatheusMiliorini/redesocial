@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Google\Cloud\Translate\TranslateClient;
+use Google\Cloud\Core\Exception\BadRequestException;
 
 class TraducaoController extends Controller
 {
@@ -37,7 +38,14 @@ class TraducaoController extends Controller
             'target' => 'pt-br'
         ]);
 
-        $traduzido = $translate->translate($texto);
+        try {
+            $traduzido = $translate->translate($texto);
+        } catch (BadRequestException $e) {
+            return response()->json([
+                'erro' => 'Impossível traduzir. Verifique se a mensagem está realmente em outro idioma!',
+                'realError' => \json_decode($e->getMessage()),
+            ], 401);
+        }
         $nomeLingua = $this->getLanguageName($translate, $traduzido['source']);
         $traduzido['source'] = $nomeLingua ? $nomeLingua : $traduzido['source'];
 
