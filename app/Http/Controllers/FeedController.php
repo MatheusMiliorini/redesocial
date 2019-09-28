@@ -74,7 +74,7 @@ class FeedController extends Controller
                 pu.tipo_link,
                 'storage/'||pu.link AS link,
                 u.nome AS usuario,
-                'storage/'||u.foto AS foto,
+                COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
                 CASE WHEN pu.usuario_id = :usuario_id THEN TRUE ELSE FALSE END AS minha_publicacao,
                 CASE WHEN (
                     SELECT COUNT(*) AS liked
@@ -114,12 +114,9 @@ class FeedController extends Controller
     {
         $publicacao = Publicacao::find($publicacao_id);
         if ($publicacao->usuario_id === session("usuario")->usuario_id) {
-            $link = $publicacao->link; // Armazena pois não ficará disponível após apagar a publicação
             $publicacao->delete();
 
-            if (!empty($link)) {
-                Storage::delete($link);
-            }
+            Storage::deleteDirectory("publicacoes/{$publicacao_id}");
 
             return response()->json([
                 "status" => "success",
@@ -183,14 +180,19 @@ class FeedController extends Controller
                 rp.tipo_link,
                 'storage/' || rp.link AS link,
                 u.nome AS usuario,
-                'storage/' || u.foto AS foto
+                COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
+                CASE WHEN rp.usuario_id = :usuario_id THEN TRUE ELSE FALSE END AS minha_publicacao 
             FROM
                 respostas_publicacao rp
             JOIN usuarios u ON
                 rp.usuario_id = u.usuario_id
-            WHERE rp.publicacao_id = :publicacao_id
+            WHERE 
+                rp.publicacao_id = :publicacao_id
+            ORDER BY 
+                quando DESC
         ", [
-            'publicacao_id' => $publicacao_id
+            'publicacao_id' => $publicacao_id,
+            'usuario_id' => session('usuario')->usuario_id,
         ]);
 
         return response()->json($dados);
@@ -242,5 +244,30 @@ class FeedController extends Controller
         }
 
         DB::commit();
+    }
+
+    /**
+     * Exclui o comentário criado por um usuário
+     * @param int $rp_id
+     */
+    function excluiComentario(int $rp_id)
+    {
+        $rp = RespostaPublicacao::where('rp_id', $rp_id)->where('usuario_id', session('usuario')->usuario_id)->first();
+
+        if (!$rp) {
+            return response()->json([
+                'erro' => 'Resposta não encontrada!',
+            ], 404);
+        }
+
+        $link = $rp->link;
+        $rp->delete();
+        if ($link) {
+            Storage::delete($link);
+        }
+
+        return response()->json([
+            'status' => 'success',
+        ]);
     }
 }

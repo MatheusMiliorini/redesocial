@@ -30,7 +30,7 @@ class ConexoesController extends Controller
             SELECT 
                 u.usuario_id,
                 u.nome,
-                '/storage/'||u.foto AS foto,
+                COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
                 u.localizacao,
                 u.url_unica,
                 json_agg(
@@ -58,7 +58,7 @@ class ConexoesController extends Controller
                 u.usuario_id = ints.usuario_id
             WHERE 
                 u.nome ILIKE :pesquisa	
-                AND u.usuario_id IN (
+                /* AND u.usuario_id IN (
                     SELECT us2.usuario_id
                     FROM idiomas_usuarios us2
                     WHERE us2.idioma_id IN (
@@ -66,7 +66,7 @@ class ConexoesController extends Controller
                         FROM idiomas_usuarios us3
                         WHERE us3.usuario_id = :usuario_id
                     )
-                )
+                ) */
                 AND u.usuario_id <> :usuario_id
             GROUP BY 
                 u.usuario_id,
@@ -93,7 +93,7 @@ class ConexoesController extends Controller
             SELECT 
                 u.usuario_id,
                 u.nome,
-                '/storage/'||u.foto AS foto,
+                COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
                 u.localizacao,
                 u.url_unica,
                 json_agg(
@@ -154,7 +154,7 @@ class ConexoesController extends Controller
             SELECT 
                 u.usuario_id,
                 u.nome,
-                '/storage/'||u.foto AS foto,
+                COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
                 u.localizacao,
                 u.url_unica,
                 json_agg(

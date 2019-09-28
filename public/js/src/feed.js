@@ -352,15 +352,21 @@ class Comentarios extends Component {
                 publicacao_id
             });
 
-            this.atualizarRespostas();
+            this.atualizarRespostas(() => {
+                jQuery("#modalComentarios").modal();
+            });
         });
 
-        PubSub.subscribe("ATUALIZAR_RESPOSTAS", function () {
+        PubSub.subscribe("ATUALIZAR_RESPOSTAS", () => {
             this.atualizarRespostas();
         });
     }
 
-    atualizarRespostas() {
+    /**
+     * Atualiza as respostas e roda um callback após
+     * @param {function} callback 
+     */
+    atualizarRespostas(callback = () => { }) {
         $.ajax({
             url: `/feed/publicacoes/${this.state.publicacao_id}/comentarios`,
             success: (comentarios) => {
@@ -373,7 +379,7 @@ class Comentarios extends Component {
                     comentarios,
                 });
 
-                jQuery("#modalComentarios").modal();
+                callback();
             },
             error: () => {
                 disparaErro("Ocorreu um erro ao buscar os comentários. Por favor, verifique sua conexão e tente novamente.");
@@ -394,6 +400,52 @@ class Comentarios extends Component {
 }
 
 function Comentario(props) {
+
+    function excluirComentario() {
+        swal({
+            title: "Excluir comentário",
+            text: "Tem certeza que deseja excluir este comentário?",
+            icon: "warning",
+            buttons: {
+                cancel: {
+                    visible: true,
+                    text: "Cancelar",
+                },
+                confirm: {
+                    visible: true,
+                    text: "Confirmar",
+                    closeModal: false,
+                }
+            }
+        }).then(val => {
+            if (!val) {
+                return false;
+            }
+
+            $.ajax({
+                url: `/feed/publicacoes/comentario/${props.comentario.rp_id}`,
+                method: "DELETE",
+                headers: headerAjax,
+                success: (data) => {
+                    PubSub.publish("ATUALIZAR_RESPOSTAS");
+                    swal({
+                        title: "Sucesso!",
+                        text: "Comentário removido com sucesso.",
+                        icon: "success",
+                        timer: 1500,
+                    });
+                },
+                error: (data) => {
+                    if (data.responseJSON && data.responseJSON.erro) {
+                        disparaErro(data.responseJSON.erro);
+                    } else {
+                        disparaErro("Ocorreu um erro ao excluir o comentário. Por favor, verifique sua conexão e tente novamente");
+                    }
+                }
+            });
+        })
+    }
+
     return (
         <Wrapper>
             <Avatar src={props.comentario.foto} style={{ marginBottom: "0.5rem" }} />
@@ -419,6 +471,11 @@ function Comentario(props) {
                     </div>
                 }
             </BlocoPublicacao>
+
+            {/* Excluir comentário */}
+            {props.comentario.minha_publicacao === true &&
+                <Botao onClick={excluirComentario} btnExcluir="true" title="Excluir Publicação" className="far fa-trash-alt" />
+            }
         </Wrapper>
     )
 }

@@ -38,6 +38,7 @@ Route::middleware(['UserLogged'])->group(function () {
             Route::delete("/{publicacao_id}", 'FeedController@deletaPublicao');
             Route::get("/{publicacao_id}/comentarios", 'FeedController@getComentarios');
             Route::post("/{publicacao_id}/comentar", 'FeedController@salvaComentario');
+            Route::delete("/comentario/{rp_id}", 'FeedController@excluiComentario');
 
             Route::post("/curtir/{publicacao_id}", 'FeedController@curtirPublicacao');
         });

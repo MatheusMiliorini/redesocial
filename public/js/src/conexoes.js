@@ -206,7 +206,7 @@ function Busca(props) {
         <React.Fragment>
             <label>Buscar pessoas</label>
             <input type="text" className="form-control" onChange={props.onChange} value={props.pesquisa} />
-            <small className="form-text text-muted">Apenas usuários com seus idiomas serão listados.</small>
+            {/* <small className="form-text text-muted">Apenas usuários com seus idiomas serão listados.</small> */}
         </React.Fragment>
     )
 }
