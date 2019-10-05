@@ -18,21 +18,27 @@
 'use strict';
 
 // CODELAB: Update cache names any time any of the cached files change.
-const CACHE_NAME = 'static-cache-v0.73';
+const CACHE_NAME = 'static-cache-v0.79';
 
 // CODELAB: Add list of files to cache here.
 const FILES_TO_CACHE = [
+    '/',
+    '/manifest.json',
     '/feed',
     '/conexoes',
-    '/meuPerfil',   
+    '/meuPerfil',
     '/js/meuPerfil.js',
+    '/service-worker.js',
     '/js/topo.js',
     '/js/dist/completarcadastro.js',
     '/js/dist/conexoes.js',
     '/js/dist/feed.js',
     '/js/dist/perfilUsuario.js',
     '/css/topo.css',
+    '/css/auth.css',
     '/css/fontawesome-all.min.css',
+    'webfonts/fa-solid-900.woff2',
+    '/webfonts/fa-regular-400.woff2',
     'https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css',
     'https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.css',
     'https://code.jquery.com/jquery-3.3.1.js',
@@ -72,18 +78,9 @@ self.addEventListener('activate', (evt) => {
 
 self.addEventListener('fetch', (evt) => {
     console.log('[ServiceWorker] Fetch', evt.request.url);
-    // CODELAB: Add fetch event handler here.
-    if (evt.request.mode !== 'navigate') {
-        // Not a page navigation, bail.
-        return;
-    }
     evt.respondWith(
-        fetch(evt.request)
-            .catch(() => {
-                return caches.open(CACHE_NAME)
-                // .then((cache) => {
-                //     return cache.match('offline.html');
-                // });
-            })
+        caches.match(evt.request).then(function (response) {
+            return response || fetch(evt.request);
+        })
     );
 });

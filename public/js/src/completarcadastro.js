@@ -55,11 +55,7 @@ class SeletorIdiomas extends Component {
                 })
             },
             error: (data) => {
-                swal({
-                    title: "Oops...",
-                    icon: "error",
-                    text: "Ocorreu um erro ao carregar os idiomas. Por favor, tente novamente",
-                })
+                disparaErro("Ocorreu um erro ao buscar a lista de idiomas. Por favor, cheque sua conexão e tente novamente.");
             }
         });
 

@@ -169,7 +169,7 @@ export class Publicacao extends Component {
     }
 
     abrirPerfil() {
-        window.open(`/perfil/${this.state.url_unica}`, '_blank');
+        location.href = `/perfil/${this.state.url_unica}`;
     }
 
     render() {

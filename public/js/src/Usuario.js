@@ -50,7 +50,7 @@ export class Usuario extends Component {
     }
 
     abrirPerfil() {
-        window.open(`/perfil/${this.props.res.url_unica}`, '_blank');
+        location.href = `/perfil/${this.props.res.url_unica}`;
     }
 
     render() {
