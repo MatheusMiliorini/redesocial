@@ -40,6 +40,9 @@ Route::middleware(['UserLogged'])->group(function () {
     Route::post("/meuPerfil", 'AuthController@alteraPerfil');
     Route::get("/meuPerfil/idiomas", 'AuthController@meusIdiomas'); // Usado no React
 
+    Route::get("/perfil/{url_unica}", 'AuthController@visitaPerfil');
+    Route::get("/perfil/{url_unica}/getAll", 'AuthController@getAll'); // Pega os dados do usuários visitado
+
     Route::prefix("/feed")->group(function () {
         Route::get("/", 'FeedController@mostraFeed');
         Route::prefix("/publicacoes")->group(function () {

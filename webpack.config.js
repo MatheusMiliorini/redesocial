@@ -5,6 +5,7 @@ module.exports = {
         'feed': './public/js/src/feed.js',
         'completarcadastro': './public/js/src/completarcadastro.js',
         'conexoes': './public/js/src/conexoes.js',
+        'perfilUsuario': './public/js/src/perfilUsuario.js',
     },
     output: {
         path: path.resolve(__dirname, 'public/js/dist'),

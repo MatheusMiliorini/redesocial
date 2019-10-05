@@ -394,4 +394,124 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Mostra o perfil de um usuário
+     */
+    public function visitaPerfil(string $url_unica)
+    {
+        $usuario = DB::select('SELECT * FROM usuarios WHERE url_unica = ?', [$url_unica]);
+        if (!$usuario) {
+            return redirect('/feed');
+        } else {
+            $usuario[0]->senha = null;
+            return view('perfilUsuario', [
+                'title' => $usuario[0]->nome,
+                'url_unica' => $url_unica
+            ]);
+        }
+    }
+
+    /**
+     * Retorna os dados do usuário e sua publicações
+     * @param string $url_unica
+     */
+    public function getAll(string $url_unica)
+    {
+        $perfil = DB::select("
+            WITH eu_sigo AS (
+                SELECT segue
+                FROM conexoes
+                WHERE seguidor = :usuario_id
+            )
+            SELECT
+                nome,
+                usuario_id,
+                u.localizacao,
+                u.biografia,
+                u.site,
+                u.biografia,
+                u.nascimento,
+                COALESCE('/storage/' || u.foto, 'https://api.adorable.io/avatars/256/' || u.url_unica) AS foto,
+                CASE WHEN u.usuario_id IN (SELECT * FROM eu_sigo) THEN TRUE ELSE FALSE END AS seguindo
+            FROM
+                usuarios u
+            WHERE
+                url_unica = :url_unica
+        ", [
+            'usuario_id' => session('usuario')->usuario_id,
+            'url_unica' => $url_unica
+        ]);
+
+        $interesses = DB::select("
+            SELECT
+                i.*
+            FROM
+                usuarios u
+            JOIN interesses_usuarios iu ON
+                iu.usuario_id = u.usuario_id
+            JOIN interesses i ON
+                i.interesse_id = iu.interesse_id
+            WHERE
+                u.url_unica = ?
+        ", [
+            $url_unica
+        ]);
+
+        $publicaoes = DB::select("
+            SELECT 
+                pu.publicacao_id,
+                pu.conteudo,
+                pu.quando,
+                pu.tipo_link,
+                '/storage/'||pu.link AS link,
+                u.nome AS usuario,
+                COALESCE('/storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
+                CASE WHEN pu.usuario_id = :usuario_id THEN TRUE ELSE FALSE END AS minha_publicacao,
+                CASE WHEN (
+                    SELECT COUNT(*) AS liked
+                    FROM likes_publicacao
+                    WHERE usuario_id = :usuario_id
+                    AND publicacao_id = pu.publicacao_id
+                ) > 0 THEN TRUE ELSE FALSE END AS liked,
+                (
+                    SELECT count(*)
+                    FROM likes_publicacao lp
+                    WHERE lp.publicacao_id = pu.publicacao_id
+                ) AS likes
+            FROM 
+                publicacoes pu
+            JOIN usuarios u ON 
+                u.usuario_id = pu.usuario_id
+            WHERE 
+                u.url_unica = :url_unica
+            ORDER BY pu.quando DESC
+        ", [
+            'usuario_id' => session('usuario')->usuario_id,
+            'url_unica' => $url_unica
+        ]);
+
+        $idiomas = DB::select("
+            SELECT
+                i.*,
+                iu.*
+            FROM
+                idiomas i
+            JOIN idiomas_usuarios iu ON
+                iu.idioma_id = i.idioma_id
+            JOIN usuarios u ON
+                u.usuario_id = iu.usuario_id
+            WHERE
+                u.url_unica = ?
+        ", [
+            $url_unica
+        ]);
+
+        return response()->json([
+            'perfil' => $perfil[0],
+            'interesses' => $interesses,
+            'publicacoes' => $publicaoes,
+            'idiomas' => $idiomas
+        ]);
+    }
 }

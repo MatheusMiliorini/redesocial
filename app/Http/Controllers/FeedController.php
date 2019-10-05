@@ -74,6 +74,7 @@ class FeedController extends Controller
                 pu.tipo_link,
                 'storage/'||pu.link AS link,
                 u.nome AS usuario,
+                u.url_unica,
                 COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
                 CASE WHEN pu.usuario_id = :usuario_id THEN TRUE ELSE FALSE END AS minha_publicacao,
                 CASE WHEN (
@@ -178,9 +179,9 @@ class FeedController extends Controller
                 rp.conteudo,
                 rp.quando,
                 rp.tipo_link,
-                'storage/' || rp.link AS link,
+                '/storage/' || rp.link AS link,
                 u.nome AS usuario,
-                COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
+                COALESCE('/storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
                 CASE WHEN rp.usuario_id = :usuario_id THEN TRUE ELSE FALSE END AS minha_publicacao 
             FROM
                 respostas_publicacao rp

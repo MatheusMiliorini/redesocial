@@ -13,6 +13,7 @@ export const Avatar = styled.img`
     border-radius: 50%;
     float: left;
     margin-right: 1rem;
+    cursor: pointer;
 `;
 
 export const P = styled.p`

@@ -27,6 +27,31 @@ class SeletorIdiomas extends Component {
             success: (idiomas) => {
                 this.setState({
                     idiomas
+                }, () => {
+                    // Busca os idiomas selecionados do usuário logado (tela meuPerfil)
+                    $.ajax({
+                        url: "/meuPerfil/idiomas",
+                        success: (idiomas) => {
+                            if (idiomas.length > 0) {
+                                this.setState({
+                                    qtdIdiomas: 0,
+                                    idiomasSelecionados: []
+                                });
+
+                                this.setState({
+                                    qtdIdiomas: idiomas.length,
+                                    idiomasSelecionados: idiomas,
+                                });
+                            }
+                        },
+                        error: (data) => {
+                            if (data.responseJSON.erro) {
+                                disparaErro(data.responseJSON.erro);
+                            } else {
+                                disparaErro("Ocorreu um erro ao buscar seus níveis de idiomas. Por favor, cheque sua conexão e tente novamente.");
+                            }
+                        }
+                    });
                 })
             },
             error: (data) => {
@@ -37,31 +62,6 @@ class SeletorIdiomas extends Component {
                 })
             }
         });
-
-        // Busca os idiomas selecionados do usuário logado (tela meuPerfil)
-        $.ajax({
-            url: "/meuPerfil/idiomas",
-            success: (idiomas) => {
-                if (idiomas.length > 0) {
-                    this.setState({
-                        qtdIdiomas: 0,
-                        idiomasSelecionados: []
-                    });
-
-                    this.setState({
-                        qtdIdiomas: idiomas.length,
-                        idiomasSelecionados: idiomas,
-                    });
-                }
-            },
-            error: (data) => {
-                if (data.responseJSON.erro) {
-                    disparaErro(data.responseJSON.erro);
-                } else {
-                    disparaErro("Ocorreu um erro ao buscar seus níveis de idiomas. Por favor, cheque sua conexão e tente novamente.");
-                }
-            }
-        })
 
         PubSub.subscribe("REMOVE_LINHA", () => {
             this.setState({
