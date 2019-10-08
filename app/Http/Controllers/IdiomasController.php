@@ -14,6 +14,9 @@ class IdiomasController extends Controller
     {
         $idiomas = [];
         foreach (Idioma::all()->sortBy("nome") as $idioma) {
+            $idioma->nInicial = 1; // Nível Inicial
+            $idioma->nFinal = 5;   // Nível Final
+            $idioma->ativo = true;
             $idiomas[] = $idioma;
         }
         return response()->json($idiomas);

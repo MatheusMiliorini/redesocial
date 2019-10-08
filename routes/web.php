@@ -67,6 +67,7 @@ Route::middleware(['UserLogged'])->group(function () {
     });
 
     Route::prefix("/interesses")->group(function () {
+        Route::get("/meus", "InteressesController@getMeusInteresses");
         Route::get("/", "InteressesController@getInteresses");
         Route::post("/", "InteressesController@addInteresse");
     });

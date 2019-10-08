@@ -66,3 +66,11 @@ h4 {
     background-color: #15202b;
     color: white;
 }
+
+.form-control:disabled {
+    background-color: #434648;
+}
+
+.form-control:read-only {
+    background-color: #434648;
+}
