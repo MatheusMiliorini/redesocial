@@ -64,6 +64,7 @@ Route::middleware(['UserLogged'])->group(function () {
         Route::get("/seguindo", "ConexoesController@getSeguindo");
         Route::get("/seguidores", "ConexoesController@getSeguidores");
         Route::get("/buscaUsuarios", "ConexoesController@buscaUsuarios");
+        Route::post("/buscaUsuarios", "ConexoesController@buscaUsuariosAvancado");
     });
 
     Route::prefix("/interesses")->group(function () {

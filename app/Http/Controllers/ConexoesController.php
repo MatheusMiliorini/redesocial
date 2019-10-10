@@ -85,6 +85,118 @@ class ConexoesController extends Controller
     }
 
     /**
+     * Função de descobrir usuários
+     */
+    function buscaUsuariosAvancado(Request $req)
+    {
+        $dados = $req->validate([
+            'idiomas'    => "nullable|array",
+            'interesses' => 'nullable|array'
+        ]);
+
+        $filtroInteresses = "";
+        $arrInteresses = [];
+        if (isset($dados['interesses'])) {
+            foreach ($dados['interesses'] as $int) {
+                $arrInteresses[] = $int['interesse_id'];
+            }
+            if (sizeof($arrInteresses) > 0) {
+                $filtroInteresses = "AND iu.interesse_id IN (" . \implode(", ", $arrInteresses) . ")";
+            }
+        }
+
+        $filtroIdiomas = "";
+        $arrIdiomas = [];
+        if (isset($dados['idiomas'])) {
+            foreach ($dados['idiomas'] as $idi) {
+                $idi = (object) $idi;
+                $arrIdiomas[] = "(idu.idioma_id = {$idi->idioma_id} AND idu.nivel_conhecimento BETWEEN {$idi->nInicial} AND {$idi->nFinal})";
+            }
+            if (sizeof($arrIdiomas) > 0) {
+                $filtroIdiomas = "AND (" . \implode(" OR ", $arrIdiomas) . ")";
+            }
+        }
+
+        $aux = DB::select("
+            SELECT
+                DISTINCT u.usuario_id
+            FROM
+                usuarios u
+            JOIN interesses_usuarios iu ON
+                iu.usuario_id = u.usuario_id
+            JOIN idiomas_usuarios idu ON
+                idu.usuario_id = u.usuario_id
+            WHERE
+                idu.usuario_id <> :usuario_id
+                {$filtroInteresses}
+                {$filtroIdiomas}
+        ", [
+            'usuario_id' => session('usuario')->usuario_id
+        ]);
+
+        $usuariosDentroDoFiltro = [];
+        foreach ($aux as $_) {
+            $usuariosDentroDoFiltro[] = $_->usuario_id;
+        }
+
+        if (sizeof($usuariosDentroDoFiltro) === 0) {
+            $usuarios = [];
+        } else {
+            $usuarios = DB::select("
+                WITH eu_sigo AS (
+                    SELECT segue
+                    FROM conexoes
+                    WHERE seguidor = :usuario_id
+                )
+                SELECT 
+                    u.usuario_id,
+                    u.nome,
+                    COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
+                    u.localizacao,
+                    u.url_unica,
+                    json_agg(
+                        json_build_object(
+                            'idioma', i.nome,
+                            'nivel_conhecimento', us.nivel_conhecimento
+                        )
+                    ORDER BY i.nome)::TEXT AS idiomas,
+                    ints.nome AS interesses,
+                    CASE WHEN u.usuario_id IN (SELECT * FROM eu_sigo) THEN TRUE ELSE FALSE END AS seguindo
+                FROM usuarios u
+                JOIN idiomas_usuarios us ON
+                    us.usuario_id = u.usuario_id
+                JOIN IDIOMAS i ON
+                    i.idioma_id = us.idioma_id
+                LEFT JOIN (
+                    SELECT 
+                        usuario_id, 
+                        JSON_AGG(interesses.nome)::TEXT AS nome
+                    FROM interesses_usuarios
+                    JOIN interesses ON 
+                        interesses_usuarios.interesse_id = interesses.interesse_id	
+                    GROUP BY usuario_id
+                ) ints ON 
+                    u.usuario_id = ints.usuario_id
+                WHERE 
+                    u.usuario_id <> :usuario_id
+                    AND u.usuario_id IN (" . \implode(", ", $usuariosDentroDoFiltro) . ")
+                GROUP BY 
+                    u.usuario_id,
+                    u.nome, 
+                    u.foto, 
+                    u.localizacao, 
+                    u.url_unica, 
+                    interesses
+                ORDER BY u.nome
+            ", [
+                "usuario_id" => $req->session()->get("usuario")->usuario_id
+            ]);
+        }
+
+        return response()->json($usuarios);
+    }
+
+    /**
      * Busca os usuários que o usuário logado segue
      */
     function getSeguindo(Request $req)

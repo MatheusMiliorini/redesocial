@@ -5,6 +5,7 @@ import { Usuario } from './Usuario';
 import { MiniBotao, Icone, P } from '../src/components';
 import styled from 'styled-components';
 import update from 'immutability-helper';
+import PubSub from 'pubsub-js';
 
 class Conexoes extends Component {
     constructor(props) {
@@ -14,6 +15,7 @@ class Conexoes extends Component {
             seguindo: [],
             seguidores: [],
             resultados: [],
+            avancado: false,
         }
 
         // Binds
@@ -48,8 +50,12 @@ class Conexoes extends Component {
             },
             success: (resultados) => {
                 this.setState({
-                    resultados,
-                });
+                    resultados: [],
+                }, () => {
+                    this.setState({
+                        resultados,
+                    });
+                })
             },
             error(erro) {
                 disparaErro("Ocorreu um erro ao buscar os usuário... Por favor, cheque sua conexão e tente novamente");
@@ -63,6 +69,17 @@ class Conexoes extends Component {
     componentDidMount() {
         this.buscaSeguindo();
         this.buscaSeguidores();
+
+        PubSub.subscribe("BUSCA_AVANCADA", (msg, resultados) => {
+            this.setState({
+                resultados: [],
+            }, () => {
+                this.setState({
+                    avancado: true,
+                    resultados
+                })
+            })
+        })
     }
 
     /**
@@ -108,24 +125,30 @@ class Conexoes extends Component {
     render() {
         return (
             <div>
-                <Busca pesquisa={this.state.pesquisa} onChange={this.handlePesquisa} />
-                <MiniBotao
-                    className="btn"
-                    style={{ float: "right", marginTop: "0.5rem" }}
-                    title="Descobrir"
-                    onClick={this.abrirModalDescobrir}>
-                    <Icone className="fas fa-search" />
-                </MiniBotao>
+                <div style={{ overflow: "auto" }}>
+                    <Busca
+                        pesquisa={this.state.pesquisa}
+                        onChange={this.handlePesquisa} />
+                    <MiniBotao
+                        className="btn"
+                        style={{ float: "right", marginTop: "0.5rem" }}
+                        title="Descobrir"
+                        onClick={this.abrirModalDescobrir}>
+                        <Icone
+                            style={{ marginRight: 0 }}
+                            className="fas fa-search" />
+                    </MiniBotao>
+                </div>
 
-                {this.state.pesquisa !== "" &&
+                {(this.state.pesquisa !== "" || this.state.avancado) &&
                     <Usuarios usuarios={this.state.resultados} />
                 }
 
-                {this.state.pesquisa === "" &&
-                    <Bloco title="Seguindo" usuarios={this.state.seguindo} />
+                {(this.state.pesquisa === "" && !this.state.avancado) &&
+                    <Bloco semMargem={true} title="Seguindo" usuarios={this.state.seguindo} />
                 }
 
-                {this.state.pesquisa === "" &&
+                {(this.state.pesquisa === "" && !this.state.avancado) &&
                     <Bloco title="Seguidores" usuarios={this.state.seguidores} />
                 }
             </div>
@@ -159,6 +182,7 @@ class Filtros extends Component {
         this.mudaInteresse = this.mudaInteresse.bind(this);
         this.mudaIdioma = this.mudaIdioma.bind(this);
         this.desativaIdioma = this.desativaIdioma.bind(this);
+        this.buscaComFiltro = this.buscaComFiltro.bind(this);
     }
 
     componentDidMount() {
@@ -222,6 +246,25 @@ class Filtros extends Component {
         })
     }
 
+    buscaComFiltro() {
+        $.ajax({
+            url: "/conexoes/buscaUsuarios",
+            method: "POST",
+            headers: headerAjax,
+            data: {
+                idiomas: this.state.idiomas.filter(id => id.ativo),
+                interesses: this.state.interesses.filter(int => int.marcado)
+            },
+            success(usuarios) {
+                jQuery("#modalDescobrir").modal("hide");
+                PubSub.publish("BUSCA_AVANCADA", usuarios);
+            },
+            error() {
+                disparaErro("Ocorreu um erro ao buscar os usuários. Por favor, verifique sua conexão e tente novamente");
+            }
+        });
+    }
+
     render() {
         const P2 = styled.p`
             color: white;
@@ -236,7 +279,10 @@ class Filtros extends Component {
                 <Interesses interesses={this.state.interesses} onChange={this.mudaInteresse} />
                 <P2>Idiomas</P2>
                 <Idiomas idiomas={this.state.idiomas} onChange={this.mudaIdioma} onClick={this.desativaIdioma} />
-                <button className="btn btn-success" style={{ width: "100%", marginTop: "0.5rem" }}>Buscar!</button>
+                <button
+                    className="btn btn-success"
+                    onClick={this.buscaComFiltro}
+                    style={{ width: "100%", marginTop: "0.5rem" }}>Buscar!</button>
             </div>
         )
     }
@@ -244,10 +290,6 @@ class Filtros extends Component {
 
 function Interesses(props) {
     return props.interesses.map((int, i) => <Interesse key={i} indice={i} interesse={int} onChange={props.onChange} />)
-}
-
-function Idiomas(props) {
-    return props.idiomas.map((idi, i) => <Idioma key={i} indice={i} idioma={idi} onChange={props.onChange} onClick={props.onClick} />);
 }
 
 function Interesse(props) {
@@ -264,18 +306,31 @@ function Interesse(props) {
     )
 }
 
+function Idiomas(props) {
+    return props.idiomas.map((idi, i) => <Idioma key={i} indice={i} idioma={idi} onChange={props.onChange} onClick={props.onClick} />);
+}
+
 function Idioma(props) {
     return (
         <div className="row">
-            <div className="col-6">
+            <div className="col-2" style={{ display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                <MiniBotao
+                    onClick={() => props.onClick(props.indice)}
+                    className="btn"
+                    style={{ marginRight: 0 }}
+                    title="Ativar/desativar idioma">
+                    <Icone
+                        className={props.idioma.ativo ? "far fa-check-circle" : "far fa-times-circle"} />
+                </MiniBotao>
+            </div>
+            <div className="col-4">
                 <label>Idioma</label>
                 <input
                     title="Clique para desabilitar o idioma"
                     type="text"
                     className="form-control"
-                    value={props.idioma.nome}
-                    onClick={() => props.onClick(props.indice)}
-                    readOnly={!props.idioma.ativo} />
+                    defaultValue={props.idioma.nome}
+                    readOnly={true} />
             </div>
             <div className="col-3" title="Nível de conhecimento mínimo">
                 <label>Mínimo</label>
@@ -300,7 +355,7 @@ function Idioma(props) {
 function Bloco(props) {
     return (
         <React.Fragment>
-            <h4 className="rem1top">{props.title} ({props.usuarios.length})</h4>
+            <h4 className={props.semMargem ? "" : "rem1top"}>{props.title} ({props.usuarios.length})</h4>
             {props.usuarios.map((usuario, i) => <Usuario key={i} res={usuario} />)}
         </React.Fragment>
     )
