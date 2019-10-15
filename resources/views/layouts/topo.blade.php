@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.css" integrity="sha256-p6xU9YulB7E2Ic62/PX+h59ayb3PBJ0WFTEQxq0EjHw=" crossorigin="anonymous" />
     <link rel="stylesheet" href="{{asset('css/topo.css')}}">
     <link rel="stylesheet" href="{{asset('css/fontawesome-all.min.css')}}" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
 
     @yield("styles")
 </head>
@@ -32,8 +33,10 @@
                 <i class="fas fa-home"></i>
             </a>
         </li>
-        <li class="nav-item" title="Minhas conversas">
-            <i class="fas fa-comments"></i>
+        <li class="nav-item {{$title === 'Conversas' ? 'nav-item-selected' : ''}}" title="Minhas conversas">
+            <a href="/conversas">
+                <i class="fas fa-comments"></i>
+            </a>
         </li>
         <li class="nav-item {{$title === 'Conexões' ? 'nav-item-selected' : ''}}" title="Minhas Conexões">
             <a href="/conexoes">

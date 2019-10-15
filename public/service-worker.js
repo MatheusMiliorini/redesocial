@@ -27,6 +27,7 @@ const FILES_TO_CACHE = [
     '/feed',
     '/conexoes',
     '/meuPerfil',
+    '/conversas',
     '/js/meuPerfil.js',
     '/service-worker.js',
     '/js/topo.js',

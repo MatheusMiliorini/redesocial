@@ -6,6 +6,7 @@ module.exports = {
         'completarcadastro': './public/js/src/completarcadastro.js',
         'conexoes': './public/js/src/conexoes.js',
         'perfilUsuario': './public/js/src/perfilUsuario.js',
+        'conversas': './public/js/src/conversas.js',
     },
     output: {
         path: path.resolve(__dirname, 'public/js/dist'),

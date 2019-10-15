@@ -76,6 +76,12 @@ Route::middleware(['UserLogged'])->group(function () {
     Route::prefix("/idiomas")->group(function () {
         Route::get("/", "IdiomasController@getIdiomas");
     });
+
+    Route::prefix("/conversas")->group(function () {
+        Route::get("/", "ConversasController@listaConversas");
+        Route::get("/lista", "ConversasController@getConversas");
+        Route::post("/iniciar", "ConversasController@iniciarConversa");
+    });
 });
 
 
