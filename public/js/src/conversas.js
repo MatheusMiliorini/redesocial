@@ -1,7 +1,10 @@
 import React, { Component } from 'react';
 import ReactDom from 'react-dom';
 import { Wrapper, Avatar, P } from './components';
+import { Botao } from './Publicacao';
 import PubSub from 'pubsub-js';
+import styled from 'styled-components';
+import moment from 'moment';
 
 class Conversas extends Component {
     constructor(props) {
@@ -14,6 +17,7 @@ class Conversas extends Component {
             anexoAdicionado: false,
             txtMensagem: "",
             enviandoMensagem: false,
+            intervalo: null,
         }
 
         // Binds
@@ -75,7 +79,11 @@ class Conversas extends Component {
             conversa
         }, () => {
             this.getMensagens();
-        })
+
+            this.state.intervalo = setInterval(() => {
+                this.getMensagens();
+            }, 2000);
+        });
     }
 
     handleAnexo(e) {
@@ -98,9 +106,12 @@ class Conversas extends Component {
         $.ajax({
             url: `/conversas/mensagens/${this.state.conversa.conversa_id}`,
             success: (mensagens) => {
-                this.setState({
-                    mensagens,
-                });
+                // Caso o retorno do Ajax seja após sair de uma conversa
+                if (this.state.conversa) {
+                    this.setState({
+                        mensagens,
+                    });
+                }
             },
             error: (data) => {
                 if (data.responseJSON.erro) {
@@ -157,12 +168,24 @@ class Conversas extends Component {
     }
 
     voltar() {
+        clearInterval(this.state.intervalo);
         this.setState({
-            conversa: null
+            conversa: null,
+            intervalo: null,
+            mensagens: [],
         });
     }
 
     render() {
+
+        const DivMensagens = styled.div`
+            flex: 1 1 0%;
+            padding-right: 0.5rem;
+            margin: 1rem 0px;
+            /* max-height: calc(100% - 71px - 1rem);
+            overflow-y: auto; */
+        `;
+
         return (
             <>
                 {!this.state.conversa && // SÓ APARECE SEM CONVERSA SELECIONADA
@@ -181,8 +204,8 @@ class Conversas extends Component {
                     </>
                 }
                 {this.state.conversa && // APARECE QUANDO SELECIONA UMA CONVERSA
-                    <div style={{ height: "100%", display: "flex", flexWrap: "wrap" }}>
-                        <div style={{ height: "calc(32px + 0.5rem)", width: "100%", borderBottom: "solid 1px white" }}> {/** HEADER */}
+                    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                        <div style={{ paddingBottom: "0.5rem", width: "100%", borderBottom: "solid 1px white" }}> {/** HEADER */}
                             <Avatar src={this.state.conversa.foto} style={{ height: "32px", width: "32px" }} />
                             <P>{this.state.conversa.usuario}</P>
                             <button
@@ -191,6 +214,9 @@ class Conversas extends Component {
                                 Voltar
                             </button>
                         </div>
+                        <DivMensagens> {/** Mensagens */}
+                            {this.state.mensagens.map((msg, i) => <Mensagem key={i} mensagem={msg} />)}
+                        </DivMensagens>
                         <div style={{ display: "flex", alignItems: "flex-end", width: "100%", paddingBottom: "0.5rem" }}>
                             <input
                                 style={{ flex: "0.90", marginRight: "0.5rem" }}
@@ -296,6 +322,170 @@ function Conversa(props) {
         </Wrapper>
     )
 }
+
+function Mensagem({ mensagem }) {
+    const WrapperMensagem = styled.div`
+        background-color: #373a3e;
+        color: white;
+        padding: 0.1rem 0.5rem;
+        display: table;
+        border-radius: 5px;
+        margin-bottom: 0.5rem;
+        /* box-shadow: 1px 1px 1px 0px black; */
+    `;
+
+    const Divisor = styled.hr`
+        margin: 0.1rem 0
+    `;
+
+    function traduzir() {
+        $.ajax({
+            url: "/traduzir",
+            method: "POST",
+            headers: headerAjax,
+            data: {
+                texto: mensagem.correcao != null ? mensagem.correcao : mensagem.conteudo,
+            },
+            success: (traducao) => {
+                if (traducao.text) {
+                    swal({
+                        icon: "info",
+                        text: `Traduzido de ${traducao.source}: ${traducao.text}`,
+                        buttons: {
+                            confirm: {
+                                visible: true,
+                                closeModal: true,
+                                text: "OK"
+                            }
+                        }
+                    })
+                } else {
+                    disparaErro("Ocorreu um erro ao traduzir o texto. Por favor, cheque sua conexão e tente novamente.");
+                }
+            },
+            error: (data) => {
+                if (data.responseJSON.erro) {
+                    disparaErro(data.responseJSON.erro);
+                } else {
+                    disparaErro("Ocorreu um erro ao traduzir o texto. Por favor, cheque sua conexão e tente novamente.");
+                }
+            }
+        });
+    }
+
+    function corrigir() {
+        let input = document.createElement("input");
+        input.value = mensagem.correcao ? mensagem.correcao : mensagem.conteudo;
+        input.classList = "form-control";
+        input.id = "swalInput";
+
+        swal({
+            title: "Corrigir Mensagem",
+            text: "Insira a baixo a mensagem correta",
+            content: input,
+            buttons: {
+                cancel: {
+                    visible: true,
+                    closeModal: true,
+                    text: "Cancelar",
+                },
+                confirm: {
+                    visible: true,
+                    closeModal: false,
+                }
+            }
+        }).then(val => {
+            if (!val) {
+                swal.close();
+                return;
+            }
+
+            let correcao = $("#swalInput").val();
+            if (correcao == "") {
+                swal.close();
+                return;
+            }
+
+            $.ajax({
+                url: "/conversas/correcoes",
+                method: "POST",
+                headers: headerAjax,
+                data: {
+                    conversa_id: mensagem.conversa_id,
+                    mensagem_id: mensagem.mensagem_id,
+                    correcao,
+                },
+                success: (data) => {
+                    swal({
+                        title: "Sucesso!",
+                        text: "Mensagem corrigida com sucesso!",
+                        icon: "success",
+                        timer: 2000,
+                    });
+                },
+                error: (data) => {
+                    if (data.responseJSON.erro) {
+                        disparaErro(data.responseJSON.erro);
+                    } else {
+                        disparaErro("Ocorreu um erro ao corrigir a mensagem. Por favor, cheque sua conexão e tente novamente.");
+                    }
+                }
+            });
+        })
+    }
+
+    return (
+        <WrapperMensagem style={mensagem.minhaMensagem ? { marginLeft: "auto", textAlign: "right" } : {}}>
+            <small>{mensagem.minhaMensagem ? "Você" : mensagem.nome} | {moment(mensagem.quando).fromNow(true)}</small>
+            <Divisor />
+            <span style={mensagem.correcao != null ? { color: "red" } : {}}>{mensagem.conteudo}</span>
+            {mensagem.correcao != null &&
+                <>
+                    <br />
+                    <span style={{ color: "green" }}>{mensagem.correcao}</span>
+                    <br />
+                    <small>Corrigido por: {mensagem.quem_corrigiu}</small>
+                </>
+            }
+            {(mensagem.link && mensagem.tipo_link.includes("image")) &&
+                <div style={{ textAlign: "center" }}>
+                    <img src={mensagem.link}
+                        style={{ maxWidth: "100%", maxHeight: "200px" }} />
+                </div>
+            }
+            {(mensagem.link && mensagem.tipo_link.includes("video")) &&
+                <div style={{ textAlign: "center" }}>
+                    <video
+                        controls
+                        style={{ maxWidth: "100%", maxHeight: "200px" }}>
+                        <source src={mensagem.link} type={mensagem.tipo_link} />
+                    </video>
+                </div>
+            }
+            <Divisor />
+            {mensagem.conteudo != null &&
+                <div style={{ textAlign: "left", margin: "0.5rem 0" }}>
+                    <button
+                        style={{ border: "1px solid white", marginRight: "0.5rem", color: "var(--mostarda)", backgroundColor: "var(--dark)" }}
+                        className="btn"
+                        title="Traduzir"
+                        onClick={traduzir}>
+                        <i className="fas fa-language" />
+                    </button>
+                    <button
+                        style={{ border: "1px solid white", color: "var(--mostarda)", backgroundColor: "var(--dark)" }}
+                        className="btn"
+                        title="Corrigir"
+                        onClick={corrigir}>
+                        <i className="fas fa-check" />
+                    </button>
+                </div>
+            }
+        </WrapperMensagem>
+    )
+}
+
+moment.locale('pt-br');
 
 ReactDom.render(
     <Conversas />,

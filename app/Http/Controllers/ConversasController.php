@@ -171,9 +171,11 @@ class ConversasController extends Controller
             SELECT
                 m.conteudo,
                 m.quando,
-                m.link,
+                '/storage/' || m.link AS link,
                 m.tipo_link,
                 m.correcao,
+                m.conversa_id,
+                m.mensagem_id,
                 u.nome,
                 COALESCE('/storage/' || u.foto, 'https://api.adorable.io/avatars/256/' || u.url_unica) AS foto,
                 u2.nome AS quem_corrigiu,
@@ -186,11 +188,32 @@ class ConversasController extends Controller
                 u2.usuario_id = m.quem_corrigiu
             WHERE
                 m.conversa_id = ?
+            ORDER BY m.quando
         ", [
             $meuUsuario,
             $conversa_id
         ]);
 
         return response()->json($mensagens);
+    }
+
+    function corrigeMensagem(Request $req)
+    {
+        $dados = $req->validate([
+            "mensagem_id" => "required|integer|exists:mensagens",
+            "conversa_id" => "required|integer|exists:conversas",
+            "correcao"    => "required"
+        ]);
+
+        $mensagem = Mensagem::find($dados['mensagem_id']);
+        if ($mensagem->conversa_id != $dados['conversa_id']) {
+            return response()->json([
+                "erro" => "Esta mensagem não faz parte desta conversa!"
+            ]);
+        }
+
+        $mensagem->correcao = $dados['correcao'];
+        $mensagem->quem_corrigiu = session("usuario")->usuario_id;
+        $mensagem->save();
     }
 }

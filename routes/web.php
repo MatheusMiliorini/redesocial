@@ -83,6 +83,7 @@ Route::middleware(['UserLogged'])->group(function () {
         Route::post("/mensagens", "ConversasController@enviaMensagem");
         Route::get("/lista", "ConversasController@getConversas");
         Route::post("/iniciar", "ConversasController@iniciarConversa");
+        Route::post("/correcoes", "ConversasController@corrigeMensagem");
     });
 });
 
