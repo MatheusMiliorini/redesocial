@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mensagem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -93,5 +94,103 @@ class ConversasController extends Controller
         ]);
 
         return response()->json($conversas);
+    }
+
+    function enviaMensagem(Request $req)
+    {
+        $dados = $req->validate([
+            'conversa_id' => 'required|integer|exists:conversas',
+            "mensagem"    => "nullable",
+            "anexo"       => "nullable|file",
+        ]);
+
+        $mimeType = null;
+
+        // Verifica se tem anexo ou mensagem
+        if (!isset($dados['anexo']) && \is_null($dados['mensagem'])) {
+            return response()->json([
+                "erro" => "Por favor, insera um texto ou um anexo para enviar a mensagem!",
+            ], 401);
+        }
+
+        // Verifica se o anexo é foto ou vídeo
+        if (isset($_FILES['anexo'])) {
+            // Valida o formato
+            $mimeType = mime_content_type($_FILES['anexo']['tmp_name']);
+            if (strpos($mimeType, 'image') === false && strpos($mimeType, 'video') === false) {
+                return response()->json([
+                    "erro" => "Por favor, somente formatos de imagem e vídeo são suportados."
+                ], 401);
+            }
+
+            // Valida o tamanho
+            if ($_FILES['anexo']['size'] > 8000000) {
+                return response()->json([
+                    "erro" => "Por favor, apenas arquivos com até 8MB são suportados."
+                ], 401);
+            }
+        }
+
+        DB::beginTransaction();
+
+        $mensagem = new Mensagem();
+        $mensagem->conversa_id = $dados['conversa_id'];
+        $mensagem->usuario_id = session("usuario")->usuario_id;
+        $mensagem->conteudo = $dados['mensagem'];
+        $mensagem->quando = date("Y-m-d H:i:s");
+        $mensagem->save();
+        if (isset($_FILES['anexo'])) {
+            $mensagem->link = $dados['anexo']->store("conversas/" . $mensagem->conversa_id);
+            $mensagem->tipo_link = $mimeType;
+            $mensagem->save();
+        }
+
+        DB::commit();
+    }
+
+    /**
+     * Busca as mensagens daquela conversa
+     */
+    function getMensagens(int $conversa_id)
+    {
+        $meuUsuario = session("usuario")->usuario_id;
+
+        // Verifica se o usuário participa desta conversa
+        $participa = DB::select("SELECT conversa_id FROM participantes WHERE conversa_id = ? AND usuario_id = ?", [
+            $conversa_id,
+            $meuUsuario
+        ]);
+
+        if (!$participa) {
+            return response()->json([
+                "erro" => "Você não participa desta conversa!",
+            ], 401);
+        }
+
+        $mensagens = DB::select("
+            SELECT
+                m.conteudo,
+                m.quando,
+                m.link,
+                m.tipo_link,
+                m.correcao,
+                u.nome,
+                COALESCE('/storage/' || u.foto, 'https://api.adorable.io/avatars/256/' || u.url_unica) AS foto,
+                u2.nome AS quem_corrigiu,
+                CASE WHEN u.usuario_id = ? THEN TRUE ELSE FALSE END AS \"minhaMensagem\"
+            FROM
+                mensagens m
+            JOIN usuarios u ON
+                u.usuario_id = m.usuario_id
+            LEFT JOIN usuarios u2 ON
+                u2.usuario_id = m.quem_corrigiu
+            WHERE
+                m.conversa_id = ?
+        ", [
+            $meuUsuario,
+            $conversa_id
+        ]);
+
+        return response()->json($mensagens);
     }
 }

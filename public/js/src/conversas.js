@@ -8,13 +8,22 @@ class Conversas extends Component {
         super(props);
         this.state = {
             conversa: null,
-            conversas: []
+            conversas: [],
+            mensagens: [],
+            nomeAnexo: null,
+            anexoAdicionado: false,
+            txtMensagem: "",
+            enviandoMensagem: false,
         }
 
         // Binds
         this.atualizaConversas = this.atualizaConversas.bind(this);
         this.abrirConversa = this.abrirConversa.bind(this);
         this.voltar = this.voltar.bind(this);
+        this.handleAnexo = this.handleAnexo.bind(this);
+        this.handleMensagem = this.handleMensagem.bind(this);
+        this.enviaMensagem = this.enviaMensagem.bind(this);
+        this.getMensagens = this.getMensagens.bind(this);
     }
 
     componentDidMount() {
@@ -65,8 +74,86 @@ class Conversas extends Component {
         this.setState({
             conversa
         }, () => {
-            // Busca as mensagens da conversa
+            this.getMensagens();
         })
+    }
+
+    handleAnexo(e) {
+        this.setState({
+            anexoAdicionado: e.target.files.length > 0,
+            nomeAnexo: e.target.files[0] ? e.target.files[0].name : null,
+        });
+    }
+
+    handleMensagem(e) {
+        this.setState({
+            txtMensagem: e.target.value
+        });
+    }
+
+    /**
+     * Busca as mensagens da conversa ativa
+     */
+    getMensagens() {
+        $.ajax({
+            url: `/conversas/mensagens/${this.state.conversa.conversa_id}`,
+            success: (mensagens) => {
+                this.setState({
+                    mensagens,
+                });
+            },
+            error: (data) => {
+                if (data.responseJSON.erro) {
+                    disparaErro(data.responseJSON.erro);
+                } else {
+                    disparaErro("Ocorreu um erro ao buscar as mensagens. Por favor, cheque sua conexão e tente novamente.");
+                }
+            }
+        });
+    }
+
+    enviaMensagem() {
+        this.setState({
+            enviandoMensagem: true,
+        });
+
+        const formData = new FormData();
+        formData.append("conversa_id", this.state.conversa.conversa_id);
+        formData.append("mensagem", this.state.txtMensagem);
+        if (this.state.anexoAdicionado) {
+            formData.append("anexo", document.getElementById("anexo").files[0]);
+            // formData.append("nomeAnexo", this.state.nomeAnexo); Não serve de nada
+        }
+
+        $.ajax({
+            url: "/conversas/mensagens",
+            method: "POST",
+            contentType: false,
+            processData: false,
+            data: formData,
+            headers: headerAjax,
+            success: () => {
+                this.setState({
+                    anexoAdicionado: false,
+                    nomeAnexo: null,
+                    txtMensagem: "",
+                    enviandoMensagem: false,
+                });
+
+                this.getMensagens();
+            },
+            error: (data) => {
+                if (data.responseJSON.erro) {
+                    disparaErro(data.responseJSON.erro);
+                } else {
+                    disparaErro("Ocorreu um erro ao enviar a mensagem. Por favor, cheque sua conexão e tente novamente.");
+                }
+
+                this.setState({
+                    enviandoMensagem: false,
+                });
+            }
+        });
     }
 
     voltar() {
@@ -108,16 +195,25 @@ class Conversas extends Component {
                             <input
                                 style={{ flex: "0.90", marginRight: "0.5rem" }}
                                 type="text"
+                                value={this.state.txtMensagem}
+                                onChange={this.handleMensagem}
                                 className="form-control"
                                 placeholder="Escreva uma mensagem" />
+                            <input
+                                onChange={this.handleAnexo}
+                                type="file" id="anexo"
+                                style={{ display: "none" }} />
                             <button
-                                title="Anexar algo"
+                                onClick={() => $("#anexo").click()}
+                                title={this.state.nomeAnexo ? this.state.nomeAnexo : "Anexar algo"}
                                 style={{ flex: "0.05", marginRight: "0.5rem", border: "1px solid #2E4052" }}
                                 className="btn">
-                                <i style={{ color: "var(--mostarda)" }} className="fas fa-paperclip" />
+                                <i style={{ color: this.state.anexoAdicionado ? "var(--azul-bonito)" : "var(--mostarda)" }} className="fas fa-paperclip" />
                             </button>
                             <button
+                                disabled={(!this.state.anexoAdicionado && this.state.txtMensagem.length === 0) || this.state.enviandoMensagem}
                                 title="Enviar mensagem"
+                                onClick={this.enviaMensagem}
                                 style={{ flex: "0.05", border: "1px solid #2E4052" }}
                                 className="btn">
                                 <i style={{ color: "var(--mostarda)" }} className="far fa-paper-plane" />

@@ -79,6 +79,8 @@ Route::middleware(['UserLogged'])->group(function () {
 
     Route::prefix("/conversas")->group(function () {
         Route::get("/", "ConversasController@listaConversas");
+        Route::get("/mensagens/{conversa_id}", "ConversasController@getMensagens");
+        Route::post("/mensagens", "ConversasController@enviaMensagem");
         Route::get("/lista", "ConversasController@getConversas");
         Route::post("/iniciar", "ConversasController@iniciarConversa");
     });
