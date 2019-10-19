@@ -309,9 +309,17 @@ function Usuario(props) {
 }
 
 function Conversa(props) {
+    let interesses = JSON.parse(props.conversa.interesses);
+    interesses = interesses.join(", ");
+    let idiomas = JSON.parse(props.conversa.idiomas);
+    idiomas = idiomas.join(", ");
+
     return (
         <Wrapper style={{ marginBottom: "1rem" }}>
-            <Avatar src={props.conversa.foto} />
+            <Avatar
+                title="Abrir perfil"
+                onClick={() => location.href = `/perfil/${props.conversa.url_unica}`}
+                src={props.conversa.foto} />
             <P>{props.conversa.usuario}</P>
             <button
                 onClick={() => props.onClick(props.conversa)}
@@ -319,6 +327,10 @@ function Conversa(props) {
                 className="btn btn-sm btn-primary">
                 Abrir
             </button>
+            <br />
+            <small style={{ color: "white" }}>Idiomas: {idiomas}</small>
+            <br />
+            <small style={{ color: "white" }}>Interesses: {interesses}</small>
         </Wrapper>
     )
 }

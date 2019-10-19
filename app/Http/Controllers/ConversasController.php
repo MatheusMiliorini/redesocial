@@ -81,11 +81,31 @@ class ConversasController extends Controller
             SELECT 
                 u.nome AS usuario,
                 COALESCE('storage/' || u.foto, 'https://api.adorable.io/avatars/256/'|| u.url_unica) AS foto,
-                p.conversa_id
+                p.conversa_id,
+                u.url_unica,
+                i.idiomas,
+                i2.interesses
             FROM 
                 participantes p
-                JOIN usuarios u ON 
+            JOIN usuarios u ON 
                 p.usuario_id = u.usuario_id
+            LEFT JOIN (
+                SELECT
+                    iu.usuario_id, json_agg(i.nome ORDER BY i.nome) AS idiomas
+                FROM 
+                    idiomas_usuarios iu
+                JOIN idiomas i ON
+                    iu.idioma_id = i.idioma_id
+                GROUP BY iu.usuario_id
+            ) i ON u.usuario_id = i.usuario_id
+            LEFT JOIN (
+                SELECT
+                    iu2.usuario_id, json_agg(i2.nome ORDER BY i2.nome) AS interesses
+                FROM interesses_usuarios iu2
+                JOIN interesses i2 ON
+                    iu2.interesse_id = i2.interesse_id
+                GROUP BY iu2.usuario_id
+            ) i2 ON i2.usuario_id = u.usuario_id
             WHERE 
                 p.conversa_id IN (SELECT conversa_id FROM minhas)
                 AND p.usuario_id <> :usuario_id
