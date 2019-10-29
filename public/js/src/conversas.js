@@ -28,6 +28,7 @@ class Conversas extends Component {
         this.handleMensagem = this.handleMensagem.bind(this);
         this.enviaMensagem = this.enviaMensagem.bind(this);
         this.getMensagens = this.getMensagens.bind(this);
+        this.enviaComEnter = this.enviaComEnter.bind(this);
     }
 
     componentDidMount() {
@@ -151,6 +152,8 @@ class Conversas extends Component {
                     enviandoMensagem: false,
                 });
 
+                jQuery("#inputMensagem").focus();
+
                 this.getMensagens();
             },
             error: (data) => {
@@ -165,6 +168,12 @@ class Conversas extends Component {
                 });
             }
         });
+    }
+
+    enviaComEnter(e) {
+        if (e.which == 13 && this.state.txtMensagem.trim() != "") {
+            this.enviaMensagem();
+        }
     }
 
     voltar() {
@@ -221,7 +230,10 @@ class Conversas extends Component {
                             <input
                                 style={{ flex: "0.90", marginRight: "0.5rem" }}
                                 type="text"
+                                id="inputMensagem"
+                                disabled={this.state.enviandoMensagem}
                                 value={this.state.txtMensagem}
+                                onKeyDown={this.enviaComEnter}
                                 onChange={this.handleMensagem}
                                 className="form-control"
                                 placeholder="Escreva uma mensagem" />
