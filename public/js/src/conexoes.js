@@ -91,8 +91,12 @@ class Conexoes extends Component {
             method: "GET",
             success: (seguindo) => {
                 this.setState({
-                    seguindo,
-                })
+                    seguindo: [],
+                }, () => {
+                    this.setState({
+                        seguindo
+                    });
+                });
             },
             error() {
                 disparaErro("Ocorreu um erro ao buscar os usuários que você segue. Por favor, verifique sua conexão e tente novamente.");
@@ -109,8 +113,12 @@ class Conexoes extends Component {
             method: "GET",
             success: (seguidores) => {
                 this.setState({
-                    seguidores,
-                })
+                    seguidores: [],
+                }, () => {
+                    this.setState({
+                        seguidores,
+                    })
+                });
             },
             error() {
                 disparaErro("Ocorreu um erro ao buscar os usuários que seguem você. Por favor, verifique sua conexão e tente novamente.");
